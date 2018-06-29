@@ -1,4 +1,4 @@
-# Setup the ALPR in Docker
+# Testing the ALPR in Docker
 
 `docker pull openalpr/openalpr`
 

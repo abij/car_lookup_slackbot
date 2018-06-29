@@ -16,33 +16,18 @@ def _event_handler(event_type, slack_event):
     """
     A helper function that routes events from Slack to our Bot
     by event type and subtype.
-
-    Parameters
-    ----------
-    event_type : str
-        type of event received from Slack
-    slack_event : dict
-        JSON response from a Slack reaction event
-
-    Returns
-    ----------
-    obj
-        Response object with 200 - ok or 500 - No Event Handler error
-
     """
     team_id = slack_event["team_id"]
 
     # ================ File created Events =============== #
-    # A file is uploaded
+    # A file is uploaded!
     if event_type == "file_created":
         file_id = slack_event["event"]["file_id"]
         pyBot.lookup_car(file_id)
         return make_response("File message received", 200,)
 
     # ============= Event Type Not Found! ============= #
-    # If the event_type does not have a handler
     message = "You have not added an event handler for the %s" % event_type
-    # Return a helpful error message
     return make_response(message, 200, {"X-Slack-No-Retry": 1})
 
 
@@ -114,5 +99,23 @@ def hears():
                          you're looking for.", 404, {"X-Slack-No-Retry": 1})
 
 
+@app.route("/test/<type>", methods=["GET"])
+def testing(type):
+    if not app.debug:
+        return make_response("Only available when DEBUG is enabled", 405)
+
+    params = request.args
+    if type == 'alpr':
+        result = pyBot.alpr_best_match(params.get('image_name'))
+    elif type == 'sql':
+        result = pyBot.get_details(params.get('kenteken'))
+    else:
+        return make_response("Unknown type: " + type + ". Usage: "
+                             "/test/alpr/?image_name=car1.jpg "
+                             "/test/sql/?kenteken=12AB34", 200)
+
+    return make_response(str(result), 200)
+
+
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=False, host='0.0.0.0')

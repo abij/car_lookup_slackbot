@@ -49,7 +49,6 @@ docker run --rm \
 echo 'Create a primary key for quick query "voertuigen"'
 docker exec -it postgres psql -U postgres -c "ALTER TABLE public.voertuigen ADD CONSTRAINT voertuigen_kenteken_pk PRIMARY KEY (kenteken);"
 
-
 echo 'Create table "owners" and (re)load data from the small CSV file.'
 docker exec -it postgres psql -U postgres -c "CREATE TABLE IF NOT EXISTS public.carowners (kenteken char(6) primary key, owner varchar(255));"
 docker exec -it postgres psql -U postgres -c "TRUNCATE TABLE public.carowners;"
