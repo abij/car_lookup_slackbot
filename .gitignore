@@ -12,6 +12,7 @@ local.properties
 .settings/
 .loadpath
 .recommenders
+az-deploy-params.json
 
 # Eclipse Core
 .project

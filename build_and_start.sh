@@ -6,6 +6,8 @@ set -xue
 docker build . -t bija/car_lookup
 
 docker run \
+    --cpus=1 \
+    --memory=2G \
     -e DEBUG=${DEBUG:-"True"} \
     -e ACTIVE_TOKEN=${SLACK_ACTIVATION_TOKEN:-""} \
     -e RWD_APPTOKEN=${RDW_APPTOKEN:-""} \

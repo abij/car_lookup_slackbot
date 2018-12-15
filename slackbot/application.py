@@ -17,7 +17,7 @@ pyBot = bot.Bot()
 slack = pyBot.slack
 
 app = Flask(__name__)
-log = logging.getLogger()
+log = app.logger
 
 def _event_handler(event_type, slack_event):
     """
@@ -132,9 +132,9 @@ def testing(test_part=None):
 
     params = request.args
     if not test_part or test_part not in ['alpr', 'details']:
-        return make_response("Usage: \n"
-                             "/test/alpr/?image_name=car1.jpg \n"
-                             "/test/details/?kenteken=12AB34")
+        return make_response("Usage: </br>"
+                             "/test/alpr?image_name=IMG_3423.JPG </br>"
+                             "/test/details?kenteken=12AB34")
     if test_part == 'alpr':
         file_path = os.path.join('/data', params.get('image_name'))
         result = pyBot.alpr_best_match(file_path)

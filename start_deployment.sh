@@ -7,7 +7,11 @@ function execute_deployment()
     az group deployment create \
         --resource-group $rg \
         --name car_lookup_slack_api \
-        --template-file azuredeploy.json
+        --template-file azuredeploy.json \
+        --parameters @az-deploy-params.json \
+        --output table
+
+    az container attach -g $rg --name car-lookup-slackbot-api
 }
 
 function ask_correct_subscription()

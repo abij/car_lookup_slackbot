@@ -8,6 +8,7 @@ import tempfile
 import requests
 import re
 import logging
+import json
 
 from slackclient import SlackClient
 from retrying import retry
@@ -33,13 +34,13 @@ Lookup of {kenteken}: *{car_type}* of brand *{car_brand}*
 > • APK expires: {apk}'''
 
 COMMENT_WITH_DETAILS = '''
-:mega: Found licence plate *{plate}* _(confidence {confidence})_!
+:mega: Found licence plate *{plate}* _(confidence {confidence:.2f})_!
 It's a *{car_type}* of brand *{car_brand}*
 > • Owner: {owner}
 > • Price: {price} 
 > • APK expires: {apk}'''
 
-COMMENT_NO_DETAILS = 'I found *{plate}* _(confidence {confidence})_, but no extra info associated with it...'
+COMMENT_NO_DETAILS = 'I found *{plate}* _(confidence {confidence:.2f})_, but no extra info associated with it...'
 
 
 def retry_on_file_not_found(result):
@@ -185,13 +186,14 @@ class Bot(object):
 
         file_obj = file_info_res["file"]
         file_type = file_obj["pretty_type"]
+        channels = file_obj["channels"]
         url_private_download = file_obj["url_private_download"]
 
         if not file_type.lower() in ['png', 'jpg', 'jpeg']:
             log.info('Not a valid file_type: ' + file_type)
             return
         if file_id in seen_files:
-            log.info('File_id %s in list of seen_files, ignoring...'.format(file_id))
+            log.info('File_id %s in list of seen_files, ignoring...', file_id)
             return
 
         image_name = url_private_download.split('/')[-1]
@@ -213,18 +215,18 @@ class Bot(object):
             if match is None:
                 return
 
-            confidence = float(match['confidence'])
+            confidence = match['confidence']
             kenteken = match['plate']
             log.info('Found a licenplace match: %s confidence: %s', kenteken, confidence)
 
             if confidence < threshold:
-                log.info('Confidence %s, lower then threshold (%s), not commenting on image...',confidence, threshold)
+                log.info('Confidence %s, lower then threshold (%s), not commenting on image...', confidence, threshold)
                 return
 
             details = self.get_kenteken_details(kenteken)
-            self.comment_on_image(file_id, kenteken, confidence, details)
+            self.comment_on_image(channels, file_id, kenteken, confidence, details)
 
-    def comment_on_image(self, file_id, plate, confidence, details):
+    def comment_on_image(self, channels, file_id, plate, confidence, details):
         if details:
             owner = '-'
             if details.get('owner_slackid'):
@@ -243,8 +245,19 @@ class Bot(object):
         else:
             msg = COMMENT_NO_DETAILS.format(plate=plate, confidence=confidence)
 
-        self.slack.api_call('files.comments.add', file=file_id, comment=msg)
-        log.info('Placed a comment on file_id: %s', file_id)
+        # Comments have changed: https://api.slack.com/changelog/2018-05-file-threads-soon-tread
+        # So lets post a message instead of commenting on the file...
+        # requires: chat:write:bot
+
+        for idx, channel_id in enumerate(channels):
+            r = self.slack.api_call('chat.postMessage', channel=channel_id, text=msg)
+
+            result = 'success'
+            if not r['ok']:
+                result = r['error']
+
+            log.info('Shared (%s/%s) channels): Posted message in channel_id: %s, about file_id: %s. Result: %s',
+                     idx+1, len(channels), channel_id, file_id, result)
 
     def get_kenteken_details(self, kenteken):
         result = {}
@@ -273,28 +286,29 @@ class Bot(object):
         Take the first match with highest confidence.
 
         :param file_name: File to check
-        :return: {'conf': '95.0374', 'plate': 'ND5222'} or None
+        :return: {'confidence': 95.0374, 'plate': 'ND5222'} or None
         """
-        # TODO: use the  --json  to use json results instead, easier paring.
-        stdout = subprocess.getoutput('alpr --topn 1 --country eu ' + file_name)
-        output = [line.strip(' -') for line in stdout.splitlines()]
+        stdout = subprocess.getoutput('alpr --json --topn 1 --country eu ' + file_name)
+        # Optional: libdc1394 error: Failed to initialize libdc1394
+        # Can be solved with mounting /dev/null to /dev/raw1394. But didn't work for me...
+        output = stdout.splitlines()[-1]
 
-        # First result line is a summary of the match.
-        summary = output[0]
+        # Unknown file type
+        # Image file not found: test_images/IMG_0015s.JPG
 
-        if not re.match('plate\d+: \d+ results', summary):
-            if 'No license plates found' in summary:
+        if 'Unknown file type' in output:
+            log.error('Unknown file_type: %s', file_name)
+            return
+
+        if 'Image file not found' in output:
+            log.error('Cannot find file: %s', file_name)
+            return
+
+        if output.startswith('{'):
+            lookup = json.loads(output)
+            if not lookup['results']:  # empty array, nothing found...
+                log.info('No plate found in image: %s', file_name)
                 return
-            elif 'Image file not found' in summary:
-                log.error('Incorrect config! Cannot find: %s', file_name)
-                return
-            else:
-                log.error(summary)
-                return
 
-        best_match = output[1]  # example: ND11XX\t confidence: 95.0374
-
-        pattern = '(?P<plate>.+)\t +confidence: (?P<confidence>\d+.\d+)'
-        matched = re.match(pattern, best_match)
-        if matched:
-            return matched.groupdict()
+            match = lookup['results'][0]
+            return {'confidence': match['confidence'], 'plate': match['plate']}

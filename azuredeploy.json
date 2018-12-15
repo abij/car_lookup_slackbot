@@ -19,12 +19,15 @@
     },
     "slackClientSecret": {
       "type": "securestring"
+    },
+    "rdwApptoken": {
+      "type": "securestring"
     }
   },
   "resources":[{
     "name": "car-lookup-slackbot-api",
     "type": "Microsoft.ContainerInstance/containerGroups",
-    "apiVersion": "2018-04-01",
+    "apiVersion": "2018-10-01",
     "location": "[resourceGroup().location]",
     "tags": {},
     "properties": {
@@ -39,12 +42,13 @@
           }],
           "environmentVariables": [
             {"name": "DEBUG", "value": "False"},
-            {"name": "ACTIVE_TOKEN", "value": "[parameters('slackActivationCode')]"},
+            {"name": "RWD_APPTOKEN", "value": "[parameters('rdwApptoken')]"},
             {"name": "CLIENT_ID", "value": "[parameters('slackClientId')]"},
-            {"name": "CLIENT_SECRET", "value": "[parameters('slackClientSecret')]"}
+            {"name": "CLIENT_SECRET", "secureValue": "[parameters('slackClientSecret')]"},
+            {"name": "ACTIVE_TOKEN", "secureValue": "[parameters('slackActivationCode')]"}
           ],
           "resources": {
-            "requests": {"cpu": 1, "memoryInGB": 6 }
+            "requests": {"cpu": 1, "memoryInGB": 2 }
           }
         }
       }],
@@ -64,11 +68,5 @@
         }
       }]
     }
-  }],
-  "outputs": {
-    "containerDnsAddress": {
-      "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/','car-lookup-slackbot-api')).ipAddress.dnsNameLabel]"
-    }
-  }
+  }]
 }

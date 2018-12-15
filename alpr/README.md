@@ -1,9 +1,16 @@
 # Testing the ALPR in Docker
 
-`docker pull openalpr/openalpr`
+`docker pull bija/openalpr`
 
 - Mount (-v) volume, the current directory $(pwd) as /data in the container.
 - Mount /dev/null as /dev/raw1394 to prevent errors on the Mac. 
 - The option `-c` is for Europe cars.
+
+`docker run -it --rm -v $(pwd):/data:ro -v /dev/null:/dev/raw1394 bija/openalpr -c eu test_images/IMG_7725.JPG`
+
+> The original image _(openalpr/openalpr)_ has switched from Ubuntu 14 -> 18 and is having issues with OpenCV. 
+Resulting on not 
+recognizing
+ plates in all images correclty.
 
 `docker run -it --rm -v $(pwd):/data:ro -v /dev/null:/dev/raw1394 openalpr/openalpr -c eu test_images/IMG_7725.JPG`
