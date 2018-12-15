@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "StorageaccountName": {
+      "type": "string"
+    },
+    "StorageaccountKey": {
+      "type": "securestring"
+    },
+    "filesharename": {
+      "type": "string"
+    },
+    "slackActivationCode": {
+      "type": "securestring"
+    },
+    "slackClientId": {
+      "type": "string"
+    },
+    "slackClientSecret": {
+      "type": "securestring"
+    }
+  },
+  "resources":[{
+    "name": "car-lookup-slackbot-api",
+    "type": "Microsoft.ContainerInstance/containerGroups",
+    "apiVersion": "2018-04-01",
+    "location": "[resourceGroup().location]",
+    "tags": {},
+    "properties": {
+      "containers": [{
+        "name": "car-info-slackbot",
+        "properties": {
+          "image": "bija/car_lookup:latest",
+          "ports": [{ "port": 5000 }],
+          "volumeMounts": [{
+            "name": "persistentstorage",
+            "mountPath": "/data/"
+          }],
+          "environmentVariables": [
+            {"name": "DEBUG", "value": "False"},
+            {"name": "ACTIVE_TOKEN", "value": "[parameters('slackActivationCode')]"},
+            {"name": "CLIENT_ID", "value": "[parameters('slackClientId')]"},
+            {"name": "CLIENT_SECRET", "value": "[parameters('slackClientSecret')]"}
+          ],
+          "resources": {
+            "requests": {"cpu": 1, "memoryInGB": 6 }
+          }
+        }
+      }],
+      "restartPolicy": "Always",
+      "ipAddress": {
+        "ports": [{"protocol": "tcp", "port": 5000}],
+        "type": "Public",
+        "dnsNameLabel": "gdd-car-lookup-slackbot"
+      },
+      "osType": "Linux",
+      "volumes": [{
+        "name": "persistentstorage",
+        "azureFile": {
+          "shareName": "[parameters('filesharename')]",
+          "storageAccountName": "[parameters('StorageaccountName')]",
+          "storageAccountKey": "[parameters('StorageaccountKey')]"
+        }
+      }]
+    }
+  }],
+  "outputs": {
+    "containerDnsAddress": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/','car-lookup-slackbot-api')).ipAddress.dnsNameLabel]"
+    }
+  }
+}

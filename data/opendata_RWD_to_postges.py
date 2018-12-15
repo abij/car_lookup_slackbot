@@ -28,12 +28,11 @@ df = df.select(
     F.col('Catalogusprijs').cast('int').alias('catalogusprijs')
 )
 
-container = os.environ.get('POSTGRES_CONTAINER_NAME', 'postgres')
-db = os.environ.get('POSTGRES_DB', 'postgres')
-table = os.environ.get('POSTGRES_TABLE', 'voertuigen')
-jdbc_url = "jdbc:postgresql://{}:5432/{}".format(container, db)
-
 # Write dataframe to postgres
-df.write.jdbc(jdbc_url, table,
+jdbc_url = "jdbc:postgresql://{}:5432/{}".format(
+    os.environ.get('POSTGRES_CONTAINER_NAME', 'postgres'),
+    os.environ.get('POSTGRES_DB', 'postgres'))
+
+df.write.jdbc(jdbc_url, os.environ.get('POSTGRES_TABLE', 'voertuigen'),
               properties=connectionProperties,
               mode='overwrite')

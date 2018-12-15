@@ -3,7 +3,7 @@
 set -e  # exit on error
 
 dirname=$(basename "$PWD")
-if [ ${dirname} != 'data' ]; then
+if [[ ${dirname} != 'data' ]]; then
     echo 'Error: must run script from within the data directory'
     exit 1
 fi
@@ -11,7 +11,7 @@ fi
 data_filename="Open_Data_RDW__Gekentekende_voertuigen.csv"
 download_url="https://opendata.rdw.nl/api/views/m9d7-ebf2/rows.csv?accessType=DOWNLOAD"
 
-if [ -f ${data_filename} ]; then
+if [[ -f ${data_filename} ]]; then
     echo "Skipping download of '$data_filename', file is present."
 else
     echo "Start downloading the '$data_filename' locally ~7Gb..."
@@ -19,7 +19,7 @@ else
 fi
 
 is_postgres_container_running=$(docker inspect -f {{.State.Running}} postgres)
-if [ ${is_postgres_container_running} == 'false' ]; then
+if [[ ${is_postgres_container_running} == 'false' ]]; then
     echo "Error: No container running with name 'postgres'. Just follow the readme!"
     exit 1
 fi
@@ -28,8 +28,8 @@ fi
 echo "Create empty table 'voertuigen', and load with CSV data using Spark..."
 docker exec -it postgres psql -U postgres -c "CREATE TABLE IF NOT EXISTS public.voertuigen ();"
 
-# Open the Spark UI:
-open http://localhost:4040/
+# Open the Spark UI, after 15 seconds:
+sleep 15 && open http://localhost:4040/ &
 
 ## Run a PySpark job to load the data, mounting the current dir as '/job'
 docker run --rm \
@@ -44,7 +44,7 @@ docker run --rm \
         --master 'local[2]' \
         --conf 'spark.driver.memory=2g' \
         --packages 'org.postgresql:postgresql:42.2.2' \
-        /job/pyspark_OpenDataRWD_csv_to_postges.py ${data_filename}
+        /job/opendata_RWD_to_postges.py ${data_filename}
 
 echo 'Create a primary key for quick query "voertuigen"'
 docker exec -it postgres psql -U postgres -c "ALTER TABLE public.voertuigen ADD CONSTRAINT voertuigen_kenteken_pk PRIMARY KEY (kenteken);"

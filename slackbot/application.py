@@ -3,14 +3,21 @@
 A routing layer for the onboarding bot tutorial built using
 [Slack's Events API](https://api.slack.com/events-api) in Python
 """
-import bot
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)-4.4s] [%(name)s:%(lineno)d]  %(message)s",
+    handlers=[logging.StreamHandler()])
+
+import os
 from flask import Flask, request, make_response, render_template
+import bot
 
 pyBot = bot.Bot()
-slack = pyBot.client
+slack = pyBot.slack
 
 app = Flask(__name__)
-
+log = logging.getLogger()
 
 def _event_handler(event_type, slack_event):
     """
@@ -23,7 +30,7 @@ def _event_handler(event_type, slack_event):
     # A file is uploaded!
     if event_type == "file_created":
         file_id = slack_event["event"]["file_id"]
-        pyBot.lookup_car(file_id)
+        pyBot.lookup_car_from_file(team_id, file_id)
         return make_response("File message received", 200,)
 
     # ============= Event Type Not Found! ============= #
@@ -49,10 +56,9 @@ def thanks():
     This route is called by Slack after the user installs our app. It will
     exchange the temporary authorization code Slack sends for an OAuth token
     which we'll save on the bot object to use later.
+
     To let the user know what's happened it will also render a thank you page.
     """
-    # Let's grab that temporary authorization code Slack's sent us from
-    # the request's parameters.
     code_arg = request.args.get('code')
     # The bot's auth method to handles exchanging the code for an OAuth token
     pyBot.auth(code_arg)
@@ -73,9 +79,8 @@ def hears():
     # sends back.
     #       For more info: https://api.slack.com/events/url_verification
     if "challenge" in slack_event:
-        return make_response(slack_event["challenge"], 200, {"content_type":
-                                                             "application/json"
-                                                             })
+        return make_response(slack_event["challenge"], 200,
+                             {"content_type": "application/json"})
 
     # ============ Slack Token Verification =========== #
     # We can verify the request is coming from Slack by checking that the
@@ -93,29 +98,53 @@ def hears():
         event_type = slack_event["event"]["type"]
         # Then handle the event by event_type and have your bot respond
         return _event_handler(event_type, slack_event)
+
     # If our bot hears things that are not events we've subscribed to,
     # send a quirky but helpful error response
     return make_response("[NO EVENT IN SLACK REQUEST] These are not the droids\
                          you're looking for.", 404, {"X-Slack-No-Retry": 1})
 
 
-@app.route("/test/<type>", methods=["GET"])
-def testing(type):
+@app.route("/kenteken", methods=["POST"])
+@app.route("/my_car", methods=["POST"])
+def slack_commands():
+    form_dict = request.form
+
+    command = form_dict['command']
+    user_id = form_dict['user_id']  # Slack will render the Display name
+    text = form_dict['text']
+
+    if command == '/my_car':
+        return make_response(pyBot.command_my_car(user_id, text))
+
+    if command == '/kenteken':
+        return make_response(pyBot.command_kenteken(text))
+
+    log.warning('Incoming slack command is not implemented: %s', command)
+    return make_response("Unknown command...")
+
+
+@app.route("/test", methods=["GET"])
+@app.route("/test/<test_part>", methods=["GET"])
+def testing(test_part=None):
     if not app.debug:
         return make_response("Only available when DEBUG is enabled", 405)
 
     params = request.args
-    if type == 'alpr':
-        result = pyBot.alpr_best_match(params.get('image_name'))
-    elif type == 'sql':
-        result = pyBot.get_details(params.get('kenteken'))
+    if not test_part or test_part not in ['alpr', 'details']:
+        return make_response("Usage: \n"
+                             "/test/alpr/?image_name=car1.jpg \n"
+                             "/test/details/?kenteken=12AB34")
+    if test_part == 'alpr':
+        file_path = os.path.join('/data', params.get('image_name'))
+        result = pyBot.alpr_best_match(file_path)
+    elif test_part == 'details':
+        result = pyBot.get_kenteken_details(params.get('kenteken'))
     else:
-        return make_response("Unknown type: " + type + ". Usage: "
-                             "/test/alpr/?image_name=car1.jpg "
-                             "/test/sql/?kenteken=12AB34", 200)
+        return make_response('Unknwon test_part: ' + test_part, 405)
 
-    return make_response(str(result), 200)
+    return make_response(str(result))
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=bool(os.environ.get('DEBUG', 'False')), host='0.0.0.0')
