@@ -5,6 +5,7 @@ import logging
 
 log = logging.getLogger()
 
+
 class CarOwners:
 
     def __init__(self, csv_path='/data/car-owners.csv'):
@@ -50,8 +51,8 @@ class CarOwners:
             empty_df.set_index('kenteken', inplace=True)
             self.owners_df = empty_df
         else:
-            self.owners_df = pd.read_csv(self.csv_path, sep='|', header=0, index_col='kenteken', dtype=str)
+            self.owners_df = pd.read_csv(self.csv_path, header=0, index_col='kenteken', quoting=1, dtype=str)
             self.owners_df.replace({np.nan: None}, inplace=True)
 
     def save(self):
-        self.owners_df.to_csv(self.csv_path, sep='|')
+        self.owners_df.to_csv(self.csv_path, header=True, quoting=1)

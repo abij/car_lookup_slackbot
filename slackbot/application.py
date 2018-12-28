@@ -137,7 +137,7 @@ def testing(test_part=None):
                              "/test/details?kenteken=12AB34")
     if test_part == 'alpr':
         file_path = os.path.join('/data', params.get('image_name'))
-        result = pyBot.alpr_best_match(file_path)
+        result = pyBot.licenceplateExtractor.find_licenceplates(file_path)
     elif test_part == 'details':
         result = pyBot.get_kenteken_details(params.get('kenteken'))
     else:

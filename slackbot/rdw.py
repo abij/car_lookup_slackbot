@@ -33,5 +33,5 @@ class RdwOnlineClient:
             d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%d/%m/%Y')
             d['vervaldatum_apk'] = d['dt_vervaldatum_apk'].strftime('%d-%m-%Y')
 
-        # TODO Make the names Snakecase, not upper!
+        # TODO Make the names pretty, not always upper (but BMW is upper...)!
         return d

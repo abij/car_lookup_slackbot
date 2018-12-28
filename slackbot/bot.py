@@ -3,18 +3,17 @@
 Python Slack Bot class for use with the app
 """
 import os
-import subprocess
 import tempfile
 import requests
 import re
 import logging
-import json
 
 from slackclient import SlackClient
 from retrying import retry
 
 from rdw import RdwOnlineClient
 from owners import CarOwners
+import computervision
 
 log = logging.getLogger()
 
@@ -76,6 +75,10 @@ class Bot(object):
         # Keep track Kenteken -> SlackId + Name
         self.car_owners = CarOwners(csv_path=os.environ.get('CAR_OWNERS_FILE', '/data/car-owners.csv'))
 
+        #key = os.environ.get('AZ_COGNITIVE_SERVICES_KEY', '')
+        #self.licenceplateExtractor = computervision.AzureCongitiveOCRLicenceplaceExtractor(key)
+        self.licenceplateExtractor = computervision.OpenAlprLicenceplaceExtractor()
+
     def auth(self, code):
         """
         Authenticate with OAuth and assign correct scopes.
@@ -110,7 +113,6 @@ class Bot(object):
 
         token = authed_teams[team_id]["bot_token"]
         self.slack = SlackClient(token)
-
 
     def command_kenteken(self, text):
         usage = 'Lookup car details including the owner (if known):\n' \
@@ -162,7 +164,8 @@ class Bot(object):
             return 'Invalid kenteken, should be 8 chars (including minus signs)'
 
         if 'tag' in subcommand.lower():
-            self.car_owners.tag(user_id, kenteken)
+            # TODO lookup the real name of the user, for the csv.
+            self.car_owners.tag(user_id, kenteken, name="")
             return 'Added {} to your slack handle'.format(kenteken)
         elif 'untag' in subcommand.lower():
             self.car_owners.untag(user_id, kenteken)
@@ -211,7 +214,8 @@ class Bot(object):
             f.write(response.content)
             f.flush()  # need to flush, else the file is 0 bytes...
 
-            match = self.alpr_best_match(f.name)
+            #TODO Based on the
+            match = self.licenceplateExtractor.find_licenceplates(f.name)
             if match is None:
                 return
 
@@ -264,11 +268,15 @@ class Bot(object):
 
         kenteken = kenteken.strip().replace('-', '').upper()
 
-        owner_lookup = self.car_owners.lookup(kenteken)
-        if owner_lookup:
-            result.update({
-                'owner_slackid': owner_lookup['slackid'],
-                'owner_name': owner_lookup['name']})
+        try:
+            owner_lookup = self.car_owners.lookup(kenteken)
+            if owner_lookup:
+                result.update({
+                    'owner_slackid': owner_lookup['slackid'],
+                    'owner_name': owner_lookup['name']})
+        except Exception as e:
+            log.warning('Failed to car_owner: %s', str(e))
+
         try:
             details = self.rdw_client.get_rdw_details(kenteken)
             if details:
@@ -279,36 +287,3 @@ class Bot(object):
         if len(result.keys()) == 0:
             return None
         return result
-
-    @staticmethod
-    def alpr_best_match(file_name):
-        """
-        Take the first match with highest confidence.
-
-        :param file_name: File to check
-        :return: {'confidence': 95.0374, 'plate': 'ND5222'} or None
-        """
-        stdout = subprocess.getoutput('alpr --json --topn 1 --country eu ' + file_name)
-        # Optional: libdc1394 error: Failed to initialize libdc1394
-        # Can be solved with mounting /dev/null to /dev/raw1394. But didn't work for me...
-        output = stdout.splitlines()[-1]
-
-        # Unknown file type
-        # Image file not found: test_images/IMG_0015s.JPG
-
-        if 'Unknown file type' in output:
-            log.error('Unknown file_type: %s', file_name)
-            return
-
-        if 'Image file not found' in output:
-            log.error('Cannot find file: %s', file_name)
-            return
-
-        if output.startswith('{'):
-            lookup = json.loads(output)
-            if not lookup['results']:  # empty array, nothing found...
-                log.info('No plate found in image: %s', file_name)
-                return
-
-            match = lookup['results'][0]
-            return {'confidence': match['confidence'], 'plate': match['plate']}
