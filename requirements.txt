@@ -4,4 +4,3 @@ requests
 sodapy
 pandas
 retrying
-azure-cognitiveservices-vision-computervision

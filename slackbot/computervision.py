@@ -1,7 +1,6 @@
 import subprocess
 import json
 import logging
-from azure.cognitiveservices.vision.computervision import ComputerVisionAPI
 
 log = logging.getLogger(__name__)
 
@@ -9,18 +8,6 @@ log = logging.getLogger(__name__)
 class LicenceplaceExtractor:
     def find_licenceplates(self, file_name):
         pass
-
-
-class AzureCongitiveOCRLicenceplaceExtractor(LicenceplaceExtractor):
-    def __init__(self, *args, region='westeurope', key=None, **kwargs):
-        super(AzureCongitiveOCRLicenceplaceExtractor, self).__init__(*args, **kwargs)
-        self.computer_vision = ComputerVisionAPI(azure_region=region, credentials=key)
-
-    def find_licenceplates(self, file_name):
-        # TODO Implement the Azure Cognitive OCR here.
-        # Note: URL's must end with .jpg or .png
-        # self.computer_vision.recognize_printed_text()
-        raise NotImplementedError
 
 
 class OpenAlprLicenceplaceExtractor(LicenceplaceExtractor):

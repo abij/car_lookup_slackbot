@@ -12,5 +12,6 @@ docker run \
     -e ACTIVE_TOKEN=${SLACK_ACTIVATION_TOKEN:-""} \
     -e RWD_APPTOKEN=${RDW_APPTOKEN:-""} \
     -v /dev/null:/dev/raw1394 \
-    -v /Users/alexanderbij/dev/gdd/car_lookups/alpr/test_images:/data \
-    -p 5000:5000 bija/car_lookup:latest
+    -v $(pwd)/alpr/test_images:/data \
+    -p 5000:5000 \
+    bija/car_lookup:latest
