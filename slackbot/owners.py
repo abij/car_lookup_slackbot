@@ -1,12 +1,13 @@
 import os
 import pandas as pd
-import numpy as np
 import logging
 
 log = logging.getLogger()
 
 
 class CarOwners:
+    # Source data:
+    # https://intranet.xebia.com/display/XNL/Xebia+Group+Kenteken+Registratie
 
     def __init__(self, csv_path='/data/car-owners.csv'):
         super(CarOwners, self).__init__()
@@ -21,7 +22,7 @@ class CarOwners:
         else:
             new_data = pd.Series({'slackid': slackid, 'name': name}, name=kenteken)
             self.owners_df = self.owners_df.append(new_data)
-            self.owners_df.replace({np.nan: None}, inplace=True)
+            self.owners_df = self.owners_df.where((pd.notnull(self.owners_df)), None)
         self.save()
 
     def untag(self, slackid, kenteken):
@@ -40,10 +41,12 @@ class CarOwners:
 
         self.load()
         if kenteken not in self.owners_df.index:
-            log.info('Owner lookup not found. (%s)', kenteken)
+            log.info('Owner lookup for %s, not found.', kenteken)
             return None
 
-        return self.owners_df.loc[kenteken].to_dict()
+        res = self.owners_df.loc[kenteken]
+        log.info('Owner lookup for %s, found: %s', kenteken, res.to_dict())
+        return res.to_dict()
 
     def load(self):
         if not os.path.exists(self.csv_path):
@@ -52,7 +55,7 @@ class CarOwners:
             self.owners_df = empty_df
         else:
             self.owners_df = pd.read_csv(self.csv_path, header=0, index_col='kenteken', quoting=1, dtype=str)
-            self.owners_df.replace({np.nan: None}, inplace=True)
+            self.owners_df = self.owners_df.where((pd.notnull(self.owners_df)), None)
 
     def save(self):
-        self.owners_df.to_csv(self.csv_path, header=True, quoting=1)
+        self.owners_df.to_csv(self.csv_path, header=True, quoting=1, index_label=["kenteken"])

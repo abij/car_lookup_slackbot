@@ -42,11 +42,21 @@ It's a *{car_type}* of brand *{car_brand}*
 COMMENT_NO_DETAILS = 'I found *{plate}* _(confidence {confidence:.2f})_, but no extra info associated with it...'
 
 
+# Static functions.
 def retry_on_file_not_found(result):
     if 'ok' not in result and 'file_not_found' in result['error']:
         log.info('Retry to fetch file_id details, because "file_not_found"...')
         return True
     return False
+
+
+def get_owner_from_details(details, default="-"):
+    result = default
+    if details.get('owner_slackid') is not None:
+        result = '<@{}>'.format(details.get('owner_slackid'))
+    elif details.get('owner_name') is not None:
+        result = details.get('owner_name')
+    return result
 
 
 class Bot(object):
@@ -129,17 +139,11 @@ class Bot(object):
         if not details:
             return 'No details found...'
 
-        owner = '-'
-        if details.get('owner_slackid'):
-            owner = '<@{}>'.format(details.get('owner_slackid'))
-        elif details.get('owner_name'):
-            owner = details.get('owner_name')
-
         return KENTEKEN_DETAILS_MSG.format(
             kenteken=text,
             car_type=details.get('handelsbenaming') or '-',
             car_brand=details.get('merk') or '-',
-            owner=owner,
+            owner=get_owner_from_details(details),
             apk=details.get('vervaldatum_apk') or '-',
             price=details.get('catalogusprijs') or '-')
 
@@ -232,18 +236,12 @@ class Bot(object):
 
     def comment_on_image(self, channels, file_id, plate, confidence, details):
         if details:
-            owner = '-'
-            if details.get('owner_slackid'):
-                owner = '<@{}>'.format(details.get('owner_slackid'))
-            elif details.get('owner_name'):
-                owner = details.get('owner_name')
-
             msg = COMMENT_WITH_DETAILS.format(
                 plate=plate,
                 confidence=confidence,
                 car_type=details.get('handelsbenaming') or '-',
                 car_brand=details.get('merk') or '-',
-                owner=owner,
+                owner=get_owner_from_details(details),
                 apk=details.get('vervaldatum_apk') or '-',
                 price=details.get('catalogusprijs') or '-')
         else:

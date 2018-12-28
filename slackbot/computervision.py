@@ -29,7 +29,7 @@ class OpenAlprLicenceplaceExtractor(LicenceplaceExtractor):
        :param file_name: File to check
        :return: {'confidence': 95.0374, 'plate': 'ND5222'} or None
        """
-        stdout = subprocess.getoutput('alpr --json --topn 1 --country eu ' + file_name)
+        stdout = subprocess.getoutput('alpr --json --topn 10 --country eu --pattern nl ' + file_name)
         # Optional: libdc1394 error: Failed to initialize libdc1394
         # Can be solved with mounting /dev/null to /dev/raw1394. But didn't work for me...
         output = stdout.splitlines()[-1]
@@ -56,6 +56,7 @@ class OpenAlprLicenceplaceExtractor(LicenceplaceExtractor):
                 log.info('No plate found in image: %s', file_name)
                 return
 
+            # TODO Return more than 1 result, when therre are more cars in the picture!
             match = lookup['results'][0]
             return {'confidence': match['confidence'], 'plate': match['plate']}
 
