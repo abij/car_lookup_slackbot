@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Python Slack Bot class for use with the app
-"""
 import os
 import tempfile
 import requests
@@ -11,11 +7,11 @@ import logging
 from slackclient import SlackClient
 from retrying import retry
 
-from rdw import RdwOnlineClient
-from owners import CarOwners
-import computervision
+from slackbot.rdw import RdwOnlineClient
+from slackbot.owners import CarOwners
+from slackbot.computervision import OpenAlprLicenceplaceExtractor
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 # To remember which teams have authorized your app and what tokens are
 # associated with each team, we can store this information in memory on
@@ -23,7 +19,7 @@ log = logging.getLogger()
 # save this in a more persistent memory store.
 authed_teams = {}
 
-# To prevent duplicate lookups (retries):
+# To prevent duplicate lookups (retries after failures or timeouts):
 seen_files = []
 
 KENTEKEN_DETAILS_MSG = '''
@@ -59,10 +55,10 @@ def get_owner_from_details(details, default="-"):
     return result
 
 
-class Bot(object):
+class Bot:
     """ Instantiates a Bot object to handle Slack events."""
     def __init__(self):
-        super(Bot, self).__init__()
+        super(Bot)
         self.name = "Car_info_bot"
         self.emoji = ":robot_face:"
         # When we instantiate a new bot object, we can access the app
@@ -87,7 +83,8 @@ class Bot(object):
 
         #key = os.environ.get('AZ_COGNITIVE_SERVICES_KEY', '')
         #self.licenceplateExtractor = computervision.AzureCongitiveOCRLicenceplaceExtractor(key)
-        self.licenceplateExtractor = computervision.OpenAlprLicenceplaceExtractor()
+
+        self.licenceplateExtractor = OpenAlprLicenceplaceExtractor()
 
     def auth(self, code):
         """
@@ -207,7 +204,6 @@ class Bot(object):
 
         # Don't keep images, throw away when validated.
         with tempfile.NamedTemporaryFile(suffix=image_name, dir='/data/') as f:
-
             seen_files.insert(0, file_id)
             while len(seen_files) >= 50:  # prevent endless growing list.
                 seen_files.remove(len(seen_files) - 1)
@@ -218,21 +214,17 @@ class Bot(object):
             f.write(response.content)
             f.flush()  # need to flush, else the file is 0 bytes...
 
-            #TODO Based on the
-            match = self.licenceplateExtractor.find_licenceplates(f.name)
-            if match is None:
-                return
+            for match in self.licenceplateExtractor.find_licenceplates(f.name):
+                confidence = match['confidence']
+                kenteken = match['plate']
+                log.info('Found a licenplace match: %s confidence: %s', kenteken, confidence)
 
-            confidence = match['confidence']
-            kenteken = match['plate']
-            log.info('Found a licenplace match: %s confidence: %s', kenteken, confidence)
+                if confidence < threshold:
+                    log.info('Confidence %s, lower then threshold (%s), not commenting on image...', confidence, threshold)
+                    continue
 
-            if confidence < threshold:
-                log.info('Confidence %s, lower then threshold (%s), not commenting on image...', confidence, threshold)
-                return
-
-            details = self.get_kenteken_details(kenteken)
-            self.comment_on_image(channels, file_id, kenteken, confidence, details)
+                details = self.get_kenteken_details(kenteken)
+                self.comment_on_image(channels, file_id, kenteken, confidence, details)
 
     def comment_on_image(self, channels, file_id, plate, confidence, details):
         if details:

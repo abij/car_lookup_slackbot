@@ -1,23 +1,11 @@
-# -*- coding: utf-8 -*-
-"""
-A routing layer for the onboarding bot tutorial built using
-[Slack's Events API](https://api.slack.com/events-api) in Python
-"""
-import logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)-4.4s] [%(name)s:%(lineno)d]  %(message)s",
-    handlers=[logging.StreamHandler()])
-
 import os
 from flask import Flask, request, make_response, render_template
-import bot
+
+from slackbot import bot
 
 pyBot = bot.Bot()
-slack = pyBot.slack
-
 app = Flask(__name__)
-log = app.logger
+
 
 def _event_handler(event_type, slack_event):
     """
@@ -120,31 +108,29 @@ def slack_commands():
     if command == '/kenteken':
         return make_response(pyBot.command_kenteken(text))
 
-    log.warning('Incoming slack command is not implemented: %s', command)
+    app.logger.warning('Incoming slack command is not implemented: %s', command)
     return make_response("Unknown command...")
 
 
 @app.route("/test", methods=["GET"])
-@app.route("/test/<test_part>", methods=["GET"])
-def testing(test_part=None):
+def testing():
     if not app.debug:
         return make_response("Only available when DEBUG is enabled", 405)
 
     params = request.args
-    if not test_part or test_part not in ['alpr', 'details']:
-        return make_response("Usage: </br>"
-                             "/test/alpr?image_name=IMG_3423.JPG </br>"
-                             "/test/details?kenteken=12AB34")
-    if test_part == 'alpr':
-        file_path = os.path.join('/data', params.get('image_name'))
-        result = pyBot.licenceplateExtractor.find_licenceplates(file_path)
-    elif test_part == 'details':
+
+    if 'file' in params.keys():
+        file_path = os.path.join('/data', params.get('file'))
+        result = list(pyBot.licenceplateExtractor.find_licenceplates(file_path))
+    elif 'kenteken' in params.keys():
         result = pyBot.get_kenteken_details(params.get('kenteken'))
     else:
-        return make_response('Unknwon test_part: ' + test_part, 405)
-
+        return make_response('Usage examples: </br>'
+                             '<a href="/test?file=IMG_3423.JPG">/test?file=IMG_3423.JPG</a></br>'
+                             '<a href="/test?kenteken=12AB34">/test?kenteken=12AB34</a>')
     return make_response(str(result))
 
 
 if __name__ == '__main__':
-    app.run(debug=bool(os.environ.get('DEBUG', 'False')), host='0.0.0.0')
+    is_debug_mode = os.environ.get('DEBUG', 'False').lower() in ['true', 'yes']
+    app.run(debug=is_debug_mode, host='0.0.0.0')

@@ -1,2 +1,7 @@
 # Do not checking photos
 *.jpg
+*.jpeg
+*.png
+
+# or any other data file
+*.csv

@@ -1,5 +1,8 @@
+import logging
 import datetime as dt
 from sodapy import Socrata
+
+log = logging.getLogger(__name__)
 
 
 class RdwOnlineClient:
@@ -21,7 +24,7 @@ class RdwOnlineClient:
             select='kenteken, vervaldatum_apk, voertuigsoort, merk, '
                    'handelsbenaming, catalogusprijs, zuinigheidslabel')
         if len(res) == 0:
-            print('RWD lookup not found. ({})'.format(kenteken))
+            log.info('RWD lookup not found. (%s)', kenteken)
             return None
 
         d = res[0]  # details, first result

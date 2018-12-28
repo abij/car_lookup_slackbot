@@ -1,8 +1,8 @@
 import os
-import pandas as pd
 import logging
+import pandas as pd
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 class CarOwners:

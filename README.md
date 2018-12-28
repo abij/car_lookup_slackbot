@@ -7,11 +7,12 @@
 
 > Latest version is using RDW online, not a offline database dump.
 
-$ docker run --name postgres -e POSTGRES_PASSWORD=example -d postgres
-$ data/load_data.sh
-
-$ docker build -t bija/car_lookup .
-$ docker run -e ACTIVE_TOKEN=xyz -v /dev/null:/dev/raw1394 -p 5000:5000 car_lookup
+    $ # Loading data is optional:
+    $ docker run --name postgres -e POSTGRES_PASSWORD=example -d postgres
+    $ data/load_data.sh
+    
+    $ docker build -t bija/car_lookup .
+    $ docker run -e ACTIVE_TOKEN=xyz -v /dev/null:/dev/raw1394 -p 5000:5000 bija/car_lookup
 
 
 ## Testing locally 
