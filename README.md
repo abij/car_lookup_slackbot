@@ -14,3 +14,8 @@ https://xebia.slack.com/apps/manage
 
 - [http://localhost:5000/test?kenteken=28-ZTP-6](http://localhost:5000/test?kenteken=28-ZTP-6)
 - [http://localhost:5000/test?file=someimage.jpg](http://localhost:5000/test?file=someimage.jpg)
+
+
+### TODO's:
+
+- Use a single command `/kenteken` and not also `/my_car` and use an english name, I like: `/car` simple and short!
