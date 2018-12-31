@@ -164,11 +164,11 @@ class Bot:
         if len(kenteken) != 6:
             return 'Invalid kenteken, should be 8 chars (including minus signs)'
 
-        if 'tag' in subcommand.lower():
+        if 'tag' == subcommand.lower():
             # TODO lookup the real name of the user, for the csv.
             self.car_owners.tag(user_id, kenteken, name="")
             return 'Added {} to your slack handle'.format(kenteken)
-        elif 'untag' in subcommand.lower():
+        elif 'untag' == subcommand.lower():
             self.car_owners.untag(user_id, kenteken)
             return 'Removed the liceneplate {}'.format(kenteken)
 
