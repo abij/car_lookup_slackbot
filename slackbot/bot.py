@@ -5,7 +5,7 @@ import re
 import logging
 
 from slackclient import SlackClient
-from retrying import retry
+import tenacity
 
 from slackbot.rdw import RdwOnlineClient
 from slackbot.owners import CarOwners
@@ -39,9 +39,9 @@ COMMENT_NO_DETAILS = 'I found *{plate}* _(confidence {confidence:.2f})_, but no 
 
 
 # Static functions.
-def retry_on_file_not_found(result):
-    if 'ok' not in result and 'file_not_found' in result['error']:
-        log.info('Retry to fetch file_id details, because "file_not_found"...')
+def is_file_not_found(value):
+    if 'ok' not in value and 'file_not_found' in value['error']:
+        log.info('Retry to fetch file_id details, because "file_not_found" in error...')
         return True
     return False
 
@@ -174,16 +174,21 @@ class Bot:
 
         return usage
 
-    @retry(stop_max_attempt_number=10,
-           wait_exponential_multiplier=1000,
-           wait_exponential_max=5000,
-           retry_on_result=retry_on_file_not_found)
-    def get_file_info(self, file_id):
-        return self.slack.api_call('files.info', file=file_id)
-
     def lookup_car_from_file(self, team_id, file_id, threshold=60.0):
+        # Wrapped in an inner function, so we can add a retry mechanism.
+        # Sometimes the event that a new file is posted is received, but we cannot get the details yet.
+        # We are too soon requesting the file info, I suppose.
+        @tenacity.retry(
+            stop=tenacity.stop_after_delay(30),
+            retry=(tenacity.retry_if_result(is_file_not_found)),
+            wait=tenacity.wait_exponential(multiplier=1, min=2, max=10))
+        def _inner(inner_file_id):
+            result = self.slack.api_call('files.info', file=inner_file_id)
+            return result
+
         log.info('Going to process file with id: %s...', file_id)
-        file_info_res = self.get_file_info(file_id)
+        file_info_res = _inner(file_id)
+
         if not file_info_res['ok']:
             log.warning('Failed response (files.info): %s', file_info_res['error'])
             return
