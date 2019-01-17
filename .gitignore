@@ -4,6 +4,7 @@ __pycache__
 .metadata
 bin/
 tmp/
+*.pyc
 *.tmp
 *.bak
 *.swp
