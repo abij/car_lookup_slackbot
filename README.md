@@ -18,4 +18,5 @@ https://xebia.slack.com/apps/manage
 
 ### TODO's:
 
+- Include LetsEncrypt for a valid TLS connection.
 - Use a single command `/kenteken` and not also `/my_car` and use an english name, I like: `/car` simple and short!

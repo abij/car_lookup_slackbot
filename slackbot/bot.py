@@ -39,9 +39,13 @@ COMMENT_NO_DETAILS = 'I found *{plate}* _(confidence {confidence:.2f})_, but no 
 
 
 # Static functions.
-def is_file_not_found(value):
-    if 'ok' not in value and 'file_not_found' in value['error']:
-        log.info('Retry to fetch file_id details, because "file_not_found" in error...')
+def is_file_not_found(res):
+    """
+    :param res: dict: Slack API response
+    :return: `True` when we should retry otherwise `False`
+    """
+    if not res['ok'] and 'file_not_found' in res['error']:
+        log.info('Retry, because error: %s...', res['error'])
         return True
     return False
 
@@ -174,23 +178,22 @@ class Bot:
 
         return usage
 
-    def lookup_car_from_file(self, team_id, file_id, threshold=60.0):
+    def lookup_car_from_file(self, team_id, file_id, threshold=85.0):
         # Wrapped in an inner function, so we can add a retry mechanism.
         # Sometimes the event that a new file is posted is received, but we cannot get the details yet.
         # We are too soon requesting the file info, I suppose.
         @tenacity.retry(
-            stop=tenacity.stop_after_delay(30),
+            stop=tenacity.stop_after_attempt(5),
             retry=(tenacity.retry_if_result(is_file_not_found)),
             wait=tenacity.wait_exponential(multiplier=1, min=2, max=10))
         def _inner(inner_file_id):
             result = self.slack.api_call('files.info', file=inner_file_id)
             return result
 
-        log.info('Going to process file with id: %s...', file_id)
         file_info_res = _inner(file_id)
 
         if not file_info_res['ok']:
-            log.warning('Failed response (files.info): %s', file_info_res['error'])
+            log.warning('Skipping: Failed response (files.info): %s', file_info_res['error'])
             return
 
         file_obj = file_info_res["file"]
@@ -198,11 +201,13 @@ class Bot:
         channels = file_obj["channels"]
         url_private_download = file_obj["url_private_download"]
 
-        if not file_type.lower() in ['png', 'jpg', 'jpeg']:
-            log.info('Not a valid file_type: ' + file_type)
+        valid_file_types = ['png', 'jpg', 'jpeg']
+
+        if not file_type.lower() in valid_file_types:
+            log.info('Skipping: Not a valid file_type: %s ()', file_type, valid_file_types)
             return
         if file_id in seen_files:
-            log.info('File_id %s in list of seen_files, ignoring...', file_id)
+            log.info('Skipping: The file_id %s in list of seen_files, ignoring...', file_id)
             return
 
         image_name = url_private_download.split('/')[-1]

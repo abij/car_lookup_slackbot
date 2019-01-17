@@ -18,6 +18,7 @@ def _event_handler(event_type, slack_event):
     # A file is uploaded!
     if event_type == "file_created":
         file_id = slack_event["event"]["file_id"]
+        app.logger.info('Received "file_created" event, file_id: %s', file_id)
         pyBot.lookup_car_from_file(team_id, file_id)
         return make_response("File message received", 200,)
 
