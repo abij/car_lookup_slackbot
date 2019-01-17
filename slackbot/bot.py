@@ -45,7 +45,7 @@ def is_file_not_found(res):
     :return: `True` when we should retry otherwise `False`
     """
     if not res['ok'] and 'file_not_found' in res['error']:
-        log.info('Retry, because error: %s...', res['error'])
+        log.info('Going to retry, because: "%s"', res['error'])
         return True
     return False
 
@@ -179,21 +179,22 @@ class Bot:
         return usage
 
     def lookup_car_from_file(self, team_id, file_id, threshold=85.0):
+        log.info('Going to fetch details (files.info) for file_id: %s...', file_id)
+
         # Wrapped in an inner function, so we can add a retry mechanism.
         # Sometimes the event that a new file is posted is received, but we cannot get the details yet.
         # We are too soon requesting the file info, I suppose.
         @tenacity.retry(
-            stop=tenacity.stop_after_attempt(5),
+            stop=tenacity.stop_after_attempt(10),
             retry=(tenacity.retry_if_result(is_file_not_found)),
             wait=tenacity.wait_exponential(multiplier=1, min=2, max=10))
         def _inner(inner_file_id):
-            result = self.slack.api_call('files.info', file=inner_file_id)
-            return result
+            return self.slack.api_call('files.info', file=inner_file_id)
 
-        file_info_res = _inner(file_id)
-
-        if not file_info_res['ok']:
-            log.warning('Skipping: Failed response (files.info): %s', file_info_res['error'])
+        try:
+            file_info_res = _inner(file_id)
+        except tenacity.RetryError as e:
+            log.warning('Skipping: Failed to fetch details (files.info): %s', e)
             return
 
         file_obj = file_info_res["file"]
