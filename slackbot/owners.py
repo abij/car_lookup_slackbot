@@ -41,11 +41,11 @@ class CarOwners:
 
         self.load()
         if kenteken not in self.owners_df.index:
-            log.info('Owner lookup for %s, not found.', kenteken)
+            log.info('Owner lookup for %s result: not found.', kenteken)
             return None
 
         res = self.owners_df.loc[kenteken]
-        log.info('Owner lookup for %s, found: %s', kenteken, res.to_dict())
+        log.info('Owner lookup for %s result: found: %s', kenteken, res.to_dict())
         return res.to_dict()
 
     def load(self):

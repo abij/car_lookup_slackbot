@@ -2,9 +2,17 @@ import os
 from flask import Flask, request, make_response, render_template
 
 from slackbot import bot
+from concurrent.futures import ThreadPoolExecutor
 
 pyBot = bot.Bot()
 app = Flask(__name__)
+
+# DOCS https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
+executor = ThreadPoolExecutor(4)
+
+
+def process_file_created(team_id, file_id):
+    pyBot.lookup_car_from_file(team_id, file_id)
 
 
 def _event_handler(event_type, slack_event):
@@ -18,9 +26,9 @@ def _event_handler(event_type, slack_event):
     # A file is uploaded!
     if event_type == "file_created":
         file_id = slack_event["event"]["file_id"]
-        app.logger.info('Received "file_created" event, file_id: %s', file_id)
-        pyBot.lookup_car_from_file(team_id, file_id)
-        return make_response("File message received", 200,)
+        app.logger.info('Received "file_created" event, file_id: %s, team_id: %s', file_id, team_id)
+        executor.submit(process_file_created, team_id, file_id)
+        return make_response("File message received", 202)
 
     # ============= Event Type Not Found! ============= #
     message = "You have not added an event handler for the %s" % event_type

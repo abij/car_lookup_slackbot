@@ -85,9 +85,6 @@ class Bot:
         # Keep track Kenteken -> SlackId + Name
         self.car_owners = CarOwners(csv_path=os.environ.get('CAR_OWNERS_FILE', '/data/car-owners.csv'))
 
-        #key = os.environ.get('AZ_COGNITIVE_SERVICES_KEY', '')
-        #self.licenceplateExtractor = computervision.AzureCongitiveOCRLicenceplaceExtractor(key)
-
         self.licenceplateExtractor = OpenAlprLicenceplaceExtractor()
 
     def auth(self, code):
@@ -179,6 +176,9 @@ class Bot:
         return usage
 
     def lookup_car_from_file(self, team_id, file_id, threshold=85.0):
+        if len(authed_teams) > 0 and team_id not in authed_teams:
+            log.warning('Skipping: team_id %s is not in authorized list. (files.info): %s',
+                        team_id, file_id)
         log.info('Going to fetch details (files.info) for file_id: %s...', file_id)
 
         # Wrapped in an inner function, so we can add a retry mechanism.
@@ -198,6 +198,7 @@ class Bot:
             return
 
         file_obj = file_info_res["file"]
+        file_name = file_obj["name"]
         file_type = file_obj["pretty_type"]
         channels = file_obj["channels"]
         url_private_download = file_obj["url_private_download"]
@@ -224,6 +225,9 @@ class Bot:
 
             f.write(response.content)
             f.flush()  # need to flush, else the file is 0 bytes...
+
+            log.info('Downloaded (file_id) %s named: "%s" as tempfile "%s", trying to find licence plates...',
+                     file_id, file_name, f.name)
 
             for match in self.licenceplateExtractor.find_licenceplates(f.name):
                 confidence = match['confidence']
