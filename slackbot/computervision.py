@@ -16,7 +16,7 @@ class OpenAlprLicenceplaceExtractor(LicenceplaceExtractor):
         Take the matches with highest confidence following the NL pattern.
 
         :param file_name: File to check
-        :return: Generator of: [ {'confidence': 95.0374, 'plate': 'ND5222'}, ... ]
+        :return: Generator of: [ {'confidence': 95.0374, 'plate': 'ND5222', 'valid_nl_pattern': True}, ... ]
         """
         stdout = subprocess.getoutput('alpr --json --topn 10 --country eu --pattern nl ' + file_name)
 
@@ -44,6 +44,8 @@ class OpenAlprLicenceplaceExtractor(LicenceplaceExtractor):
                 return []
 
             for match in lookup['results']:
-                yield {'confidence': match['confidence'], 'plate': match['plate']}
+                yield {'confidence': match['confidence'],
+                       'plate': match['plate'],
+                       'valid_nl_pattern': match['matches_template'] == 1}
         else:
             raise ValueError("Unable to parse result from 'alpr' command: " + output)

@@ -229,19 +229,49 @@ class Bot:
             log.info('Downloaded (file_id) %s named: "%s" as tempfile "%s", trying to find licence plates...',
                      file_id, file_name, f.name)
 
-            for match in self.licenceplateExtractor.find_licenceplates(f.name):
+            idx = -1  # marker for no results.
+            for idx, match in enumerate(self.licenceplateExtractor.find_licenceplates(f.name)):
                 confidence = match['confidence']
                 kenteken = match['plate']
-                log.info('Found a licenplace match: %s confidence: %s', kenteken, confidence)
+                valid = match['valid_nl_pattern']
+                log.info('Found a licenplace match: %s, confidence: %s, valid: %s', kenteken, confidence, valid)
 
-                if confidence < threshold:
-                    log.info('Confidence %s, lower then threshold (%s), not commenting on image...', confidence, threshold)
+                if confidence < threshold or not valid:
+                    log.info('Valid pattern: %s or Confidence %s lower then threshold (%s).', valid, confidence, threshold)
+                    self.comment_low_confidence(channels, confidence, kenteken, file_id, valid)
                     continue
 
                 details = self.get_kenteken_details(kenteken)
-                self.comment_on_image(channels, file_id, kenteken, confidence, details)
+                self.comment_with_match(channels, file_id, kenteken, confidence, details)
 
-    def comment_on_image(self, channels, file_id, plate, confidence, details):
+            if idx == -1:
+                self.comment_no_plates_found(channels, file_id)
+
+    def comment_low_confidence(self, channels, confidence, kenteken, file_id, valid):
+        msg_pattern = "is valid NL pattern"
+        if not valid:
+            msg_pattern = "is NOT a valid NL pattern"
+
+        msg = "Skipping licence plate '{kenteken}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
+                kenteken=kenteken, confidence=confidence, msg_pattern=msg_pattern)
+        for idx, channel_id in enumerate(channels):
+            r = self.slack.api_call('chat.postMessage', channel=channel_id, text=msg)
+            result = 'success'
+            if not r['ok']:
+                result = r['error']
+            log.info('Shared (%s/%s) channels): Posted message "Low confidence" in channel_id: %s, about file_id: %s. Result: %s',
+                     idx+1, len(channels), channel_id, file_id, result)
+
+    def comment_no_plates_found(self, channels, file_id):
+        for idx, channel_id in enumerate(channels):
+            r = self.slack.api_call('chat.postMessage', channel=channel_id, text="No plates were found")
+            result = 'success'
+            if not r['ok']:
+                result = r['error']
+            log.info('Shared (%s/%s) channels): Posted message "No plates found" in channel_id: %s, about file_id: %s. Result: %s',
+                     idx+1, len(channels), channel_id, file_id, result)
+
+    def comment_with_match(self, channels, file_id, plate, confidence, details):
         if details:
             msg = COMMENT_WITH_DETAILS.format(
                 plate=plate,
@@ -260,12 +290,11 @@ class Bot:
 
         for idx, channel_id in enumerate(channels):
             r = self.slack.api_call('chat.postMessage', channel=channel_id, text=msg)
-
             result = 'success'
             if not r['ok']:
                 result = r['error']
 
-            log.info('Shared (%s/%s) channels): Posted message in channel_id: %s, about file_id: %s. Result: %s',
+            log.info('Shared (%s/%s) channels): Posted message "Car found" in channel_id: %s, about file_id: %s. Result: %s',
                      idx+1, len(channels), channel_id, file_id, result)
 
     def get_kenteken_details(self, kenteken):
