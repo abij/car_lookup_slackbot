@@ -247,29 +247,28 @@ class Bot:
             if idx == -1:
                 self.comment_no_plates_found(channels, file_id)
 
-    def comment_low_confidence(self, channels, confidence, kenteken, file_id, valid):
-        msg_pattern = "is valid NL pattern"
-        if not valid:
-            msg_pattern = "is NOT a valid NL pattern"
-
-        msg = "Skipping licence plate '{kenteken}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
-                kenteken=kenteken, confidence=confidence, msg_pattern=msg_pattern)
+    def post_chat_messge(self, channels, file_id, msg, log_msg_descr):
+        # Comments have changed: https://api.slack.com/changelog/2018-05-file-threads-soon-tread
+        # So lets post a message instead of commenting on the file...
+        # requires: chat:write:bot
         for idx, channel_id in enumerate(channels):
             r = self.slack.api_call('chat.postMessage', channel=channel_id, text=msg)
             result = 'success'
             if not r['ok']:
                 result = r['error']
-            log.info('Shared (%s/%s) channels): Posted message "Low confidence" in channel_id: %s, about file_id: %s. Result: %s',
-                     idx+1, len(channels), channel_id, file_id, result)
+            log.info('Shared (%s/%s) channels): Posted message "%s" in channel_id: %s, about file_id: %s. Result: %s',
+                     idx + 1, len(channels), log_msg_descr, channel_id, file_id, result)
+
+    def comment_low_confidence(self, channels, confidence, kenteken, file_id, valid):
+        msg_pattern = "is valid NL pattern"
+        if not valid:
+            msg_pattern = "is NOT a valid NL pattern"
+        msg = "Skipping licence plate '{kenteken}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
+                kenteken=kenteken, confidence=confidence, msg_pattern=msg_pattern)
+        self.post_chat_messge(channels, file_id, msg, "Low confidence")
 
     def comment_no_plates_found(self, channels, file_id):
-        for idx, channel_id in enumerate(channels):
-            r = self.slack.api_call('chat.postMessage', channel=channel_id, text="No plates were found")
-            result = 'success'
-            if not r['ok']:
-                result = r['error']
-            log.info('Shared (%s/%s) channels): Posted message "No plates found" in channel_id: %s, about file_id: %s. Result: %s',
-                     idx+1, len(channels), channel_id, file_id, result)
+        self.post_chat_messge(channels, file_id, "No plates were found", "No plates found")
 
     def comment_with_match(self, channels, file_id, plate, confidence, details):
         if details:
@@ -283,19 +282,7 @@ class Bot:
                 price=details.get('catalogusprijs') or '-')
         else:
             msg = COMMENT_NO_DETAILS.format(plate=plate, confidence=confidence)
-
-        # Comments have changed: https://api.slack.com/changelog/2018-05-file-threads-soon-tread
-        # So lets post a message instead of commenting on the file...
-        # requires: chat:write:bot
-
-        for idx, channel_id in enumerate(channels):
-            r = self.slack.api_call('chat.postMessage', channel=channel_id, text=msg)
-            result = 'success'
-            if not r['ok']:
-                result = r['error']
-
-            log.info('Shared (%s/%s) channels): Posted message "Car found" in channel_id: %s, about file_id: %s. Result: %s',
-                     idx+1, len(channels), channel_id, file_id, result)
+        self.post_chat_messge(channels, file_id, msg, "car found")
 
     def get_kenteken_details(self, kenteken):
         result = {}
