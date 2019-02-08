@@ -6,6 +6,17 @@ Slackbot to scan images for licence plates and report the known car details:
 
 ![slack-bot-car-lookup](docs/slackbot-car-lookup.png)
 
+## Hosting
+
+- Create an app in [api.slack.com](https://api.slack.com/apps)
+    - configure /kenteken and /my_car
+    - configure event-api for
+- Host as a docker container in the cloud, or use nGrok while testing.
+    - Pass environment variables from Slack and/or opendata.rdw.nl
+        - `ACTIVE_TOKEN` OAuth _Bot User OAuth Access Token_ (xoxb-***)
+            - `CLIENT_ID` + `CLIENT_SECRET` and perform OAuth by '(Re)install app' in Slack API.
+        - `RWD_APPTOKEN` (optional) the opendata.rdw.nl api-token
+
 ## Components:
 
 - Open data: [RWD gekentekende voertuigen](https://opendata.rdw.nl/Voertuigen/Open-Data-RDW-Gekentekende_voertuigen/m9d7-ebf2)
