@@ -18,6 +18,6 @@ https://xebia.slack.com/apps/manage
 
 ### TODO's:
 
-- Include LetsEncrypt for a valid TLS connection, change the endpoints to https://.
+- Include LetsEncrypt for a valid TLS connection, change the endpoints to https:// from Slack to the Bot.
 - Use a single command `/kenteken` and not also `/my_car` and use an english name, I like: `/car` simple and short!
-- Make the bot Workspace indipendend: Its now for a single Workspace (Xebia) using one fileshare with a single csv-file
+- Make the bot Workspace independend: Its now for a single Workspace (Xebia) using one fileshare with a single csv-file

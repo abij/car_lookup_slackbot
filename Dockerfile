@@ -29,5 +29,3 @@ ENV PYTHONUNBUFFERED=0
 EXPOSE 5000
 ENTRYPOINT [ "python3" ]
 CMD ["-m", "slackbot.application" ]
-
-

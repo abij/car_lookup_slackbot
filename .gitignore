@@ -3,6 +3,7 @@ __pycache__
 
 # Build related files
 .coverage
+coverage.xml
 htmlcov/
 
 .metadata
