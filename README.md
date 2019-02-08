@@ -18,6 +18,9 @@
 
 ### TODO's:
 
-- Include LetsEncrypt for a valid TLS connection, change the endpoints to https:// from Slack to the Bot.
+- More secure incoming connection
+    - Use `from slackeventsapi import SlackEventAdapter` see: https://github.com/slackapi/python-slack-events-api
+    - Include LetsEncrypt for a valid TLS connection.
+    - Validate events from Slack
 - Use a single command `/kenteken` and not also `/my_car` and use an english name, I like: `/car` simple and short!
 - Make the bot Workspace independend: Its now for a single Workspace (Xebia) using one fileshare with a single csv-file
