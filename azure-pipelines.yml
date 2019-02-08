@@ -1,0 +1,54 @@
+variables:
+  project.name: 'car-lookup'
+  image.repo: bija
+  image.name: car_lookup
+  image.tag: latest
+  python:
+    version: 3.6
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: Use Python $(python.version)
+    inputs:
+      versionSpec: '$(python.version)'
+
+  - script: python -m pip install --upgrade pip setuptools wheel
+    displayName: 'Install tools'
+
+  - script: pip install -r requirements.txt
+    displayName: 'Install requirements'
+
+  - script: 'pylint -E slackbot/*.py'
+    displayName: Perform linting using pylint
+    continueOnError: true
+
+  - script: 'pytest --junitxml=junit/test-results.xml --cov=slackbot --cov-report=xml --cov-report=html'
+    displayName: Perform coverage test
+
+  - task: PublishTestResults@2
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFiles: '**/test-*.xml'
+      testRunTitle: 'Publish test results $(python.version)'
+
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+      reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+
+  - task: Docker@1
+    displayName: Docker login
+    inputs:
+      containerregistrytype: 'Container Registry'
+      dockerRegistryEndpoint: heicontainers
+      command: login
+
+  - script: docker build -t $(image.repo)/$(image.name):$(image.tag) .
+    displayName: "Build docker image"
+
+  - script: docker run --rm $(image.repo)/$(image.name):$(image.tag) --help
+    displayName: "Test run: print help"
+
+  - script: docker push $(image.repo)/$(image.name):$(image.tag)
+    displayName: "Push docker image"

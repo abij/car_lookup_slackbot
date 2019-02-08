@@ -7,10 +7,10 @@ setup(
     author='Alexander Bij',
     author_email='AlexanderBij@GoDataDriven.com',
     packages=['slackbot'],
-    install_requires=['Flask==1.0.2',
-                      'slackclient==1.3.0',
+    install_requires=['Flask>=1.0.2',
+                      'tornado>=4.5',
+                      'slackclient>=1.3.0',
                       'requests',
-                      'sodapy',
                       'pandas',
-                      'retrying']
+                      'tenacity']
 )

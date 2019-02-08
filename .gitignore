@@ -1,9 +1,14 @@
 .DS_Store
 __pycache__
 
+# Build related files
+.coverage
+htmlcov/
+
 .metadata
 bin/
 tmp/
+local/
 *.pyc
 *.tmp
 *.bak
