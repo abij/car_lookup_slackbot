@@ -13,9 +13,7 @@ class RdwOnlineClient:
 
     def get_rdw_details(self, kenteken):
         kenteken = kenteken.strip().replace('-', '').upper()
-
         assert len(kenteken) == 6, 'Length of the kenteken must be 6 (without any dashes).'
-        assert kenteken.isupper(), 'The kenteken must be UPPERCASE'
 
         # TODO Maybe use async and somekind of timeout
         res = self.client.get(
@@ -27,7 +25,7 @@ class RdwOnlineClient:
             log.info('RWD lookup not found. (%s)', kenteken)
             return None
 
-        d = res[0]  # details, first result
+        d = res[0].copy()  # details, first result only (copy, to reuse mocking the return value)
 
         if 'catalogusprijs' in d:
             d['catalogusprijs'] = int(d['catalogusprijs'])

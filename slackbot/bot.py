@@ -206,7 +206,7 @@ class Bot:
         valid_file_types = ['png', 'jpg', 'jpeg']
 
         if not file_type.lower() in valid_file_types:
-            log.info('Skipping: Not a valid file_type: %s ()', file_type, valid_file_types)
+            log.info('Skipping: Not a valid file_type: %s (%s)', file_type, valid_file_types)
             return
         if file_id in seen_files:
             log.info('Skipping: The file_id %s in list of seen_files, ignoring...', file_id)

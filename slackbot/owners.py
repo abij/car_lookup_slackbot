@@ -16,6 +16,9 @@ class CarOwners:
         self.load()
 
     def tag(self, slackid, kenteken, name=''):
+        kenteken = kenteken.strip().replace('-', '').upper()
+        assert len(kenteken) == 6, 'Length of the kenteken must be 6 (without any dashes)'
+
         self.load()
         if kenteken in self.owners_df.index:
             self.owners_df.loc[kenteken, 'slackid'] = slackid
@@ -35,9 +38,7 @@ class CarOwners:
         :return: Dict with 'name' and 'slackid' or None is not found
         """
         kenteken = kenteken.strip().replace('-', '').upper()
-
         assert len(kenteken) == 6, 'Length of the kenteken must be 6 (without any dashes)'
-        assert kenteken.isupper(), 'The kenteken must be UPPERCASE'
 
         self.load()
         if kenteken not in self.owners_df.index:
