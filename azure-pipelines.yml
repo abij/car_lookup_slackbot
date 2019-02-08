@@ -61,4 +61,5 @@ steps:
     displayName: Restart car-lookup container group
     inputs:
       azureSubscription: azure-car-lookup-rg
+      scriptLocation: inlineScript
       inlineScript: az container restart -g car-lookup-rg -n car-lookup-slackbot-api -o table
