@@ -1,8 +1,6 @@
 variables:
   project.name: 'car-lookup'
-  image.repo: bija
-  image.name: car_lookup
-  image.tag: latest
+  image.name: bija/car_lookup
   python.version: 3.6
 
 steps:
@@ -54,8 +52,16 @@ steps:
 #  TODO: run the container to see if it actually starts up...
 
   - task: Docker@1
-    displayName: Docker build
+    displayName: Docker push
     inputs:
       command: push
       imageName: $(image.name)
-      includeLatestTag: true
+
+#  - task: AzureResourceGroupDeployment@2
+#    displayName: Deploy new container
+#    inputs:
+#      azureSubscription: azure-car-lookup-rg
+#      action: 'Create Or Update Resource Group'
+#      resourceGroup: 'car-lookup-rg'
+#      location: 'West Europe'
+#      templateLocation: ''
