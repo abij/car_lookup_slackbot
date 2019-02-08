@@ -3,8 +3,7 @@ variables:
   image.repo: bija
   image.name: car_lookup
   image.tag: latest
-  python:
-    version: 3.6
+  python.version: 3.6
 
 steps:
   - task: UsePythonVersion@0
@@ -40,15 +39,23 @@ steps:
   - task: Docker@1
     displayName: Docker login
     inputs:
-      containerregistrytype: 'Container Registry'
-      dockerRegistryEndpoint: heicontainers
       command: login
+      containerregistrytype: 'Container Registry'
+      dockerRegistryEndpoint: bija-dockerhub
 
-  - script: docker build -t $(image.repo)/$(image.name):$(image.tag) .
-    displayName: "Build docker image"
+  - task: Docker@1
+    displayName: Docker build
+    inputs:
+      command: build
+      dockerFile: 'Dockerfile'
+      imageName: $(image.name)
+      includeLatestTag: true
 
-  - script: docker run --rm $(image.repo)/$(image.name):$(image.tag) --help
-    displayName: "Test run: print help"
+#  TODO: run the container to see if it actually starts up...
 
-  - script: docker push $(image.repo)/$(image.name):$(image.tag)
-    displayName: "Push docker image"
+  - task: Docker@1
+    displayName: Docker build
+    inputs:
+      command: push
+      imageName: $(image.name)
+      includeLatestTag: true
