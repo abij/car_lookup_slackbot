@@ -1,6 +1,6 @@
 # Slack bot: Car Lookup
 
-https://xebia.slack.com/apps/manage
+[![Build Status](https://dev.azure.com/alexanderbij/alexanderbij/_apis/build/status/abij.car_lookup_slackbot?branchName=master)](https://dev.azure.com/alexanderbij/alexanderbij/_build/latest?definitionId=1&branchName=master)
 
 ## Components:
 

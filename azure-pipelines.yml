@@ -57,11 +57,8 @@ steps:
       command: push
       imageName: $(image.name)
 
-#  - task: AzureResourceGroupDeployment@2
-#    displayName: Deploy new container
-#    inputs:
-#      azureSubscription: azure-car-lookup-rg
-#      action: 'Create Or Update Resource Group'
-#      resourceGroup: 'car-lookup-rg'
-#      location: 'West Europe'
-#      templateLocation: ''
+  - task: AzureCLI@1
+    displayName: Restart car-lookup container group
+    inputs:
+      azureSubscription: azure-car-lookup-rg
+      inlineScript: az container restart -g car-lookup-rg -n car-lookup-slackbot-api -o table
