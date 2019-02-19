@@ -31,7 +31,7 @@ class RdwOnlineClient:
             d['catalogusprijs'] = int(d['catalogusprijs'])
 
         if 'vervaldatum_apk' in d:
-            d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%d/%m/%Y')
+            d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%Y%m%d')
             d['vervaldatum_apk'] = d['dt_vervaldatum_apk'].strftime('%d-%m-%Y')
 
         # TODO Make the names pretty, not always upper (but BMW is upper...)!

@@ -6,7 +6,8 @@ import datetime as dt
 SOCRATA_RES_DATA = {
     'catalogusprijs': '12345',
     'kenteken': 'AB123ZZ',
-    'vervaldatum_apk': '01/10/2019',
+    #'vervaldatum_apk': '01/10/2019', update from opendata.rdw.nl on mid Februari
+    'vervaldatum_apk': '20191001',
     'voertuigsoort': 'Personenauto',
     'merk': 'BMW',
     'handelsbenaming': '1-SERIE',
