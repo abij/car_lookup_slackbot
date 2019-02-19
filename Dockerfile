@@ -3,6 +3,7 @@ FROM bija/openalpr
 RUN apt-get update && \
     rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
+    PS1="\\u@carlookup:\\w$ " >> /root/.bashrc && \
     apt-get install -y \
         python3-dev \
         python3-pip \
