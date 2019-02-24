@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 
+set -eu
+
 rg="car-lookup-rg"
 
 function execute_deployment()
 {
     az group deployment create \
-        --resource-group $rg \
+        --resource-group ${rg} \
         --name car_lookup_slack_api \
         --template-file azuredeploy.json \
         --parameters @az-deploy-params.json \
+        --rollback-on-error \
         --output table
 
-    az container attach -g $rg --name car-lookup-slackbot-api
+    az container attach -g ${rg} --name car-lookup-slackbot-api
 }
 
 function ask_correct_subscription()
