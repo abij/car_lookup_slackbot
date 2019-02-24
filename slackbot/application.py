@@ -11,10 +11,6 @@ app = Flask(__name__)
 executor = ThreadPoolExecutor(4)
 
 
-def process_file_created(team_id, file_id):
-    pyBot.lookup_car_from_file(team_id, file_id)
-
-
 def _event_handler(event_type, slack_event):
     """
     A helper function that routes events from Slack to our Bot
@@ -22,13 +18,13 @@ def _event_handler(event_type, slack_event):
     """
     team_id = slack_event["team_id"]
 
-    # ================ File created Events =============== #
+    # ================ File created/shared events =============== #
     # A file is uploaded!
-    if event_type == "file_created":
+    if event_type in ["file_created", "file_shared"]:
         # pylint: disable=E1101
         file_id = slack_event["event"]["file_id"]
-        app.logger.info('Received "file_created" event, file_id: %s, team_id: %s', file_id, team_id)
-        executor.submit(process_file_created, team_id, file_id)
+        app.logger.info('Received "%s" event, file_id: %s, team_id: %s', event_type, file_id, team_id)
+        executor.submit(pyBot.lookup_car_from_file, team_id, file_id)
         return make_response("File message received", 202)
 
     # ============= Event Type Not Found! ============= #
