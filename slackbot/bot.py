@@ -4,6 +4,8 @@ import requests
 import re
 import logging
 
+from threading import Lock
+
 from slackclient import SlackClient
 import tenacity
 
@@ -19,8 +21,13 @@ log = logging.getLogger(__name__)
 # save this in a more persistent memory store.
 authed_teams = {}
 
-# To prevent duplicate lookups (retries after failures or timeouts):
+# Prevent duplicate lookups
+# Especially when the Slack events 'file_created' and 'file_shared' are send both for the same file.
+# Also prevent duplicate processing after retries, failures or timeouts.
 seen_files = []
+
+# We should check and add seen_files 1 thread at the time.
+lock = Lock()
 
 KENTEKEN_DETAILS_MSG = '''
 Lookup of {kenteken}: *{car_type}* of brand *{car_brand}*
@@ -208,18 +215,20 @@ class Bot:
         if not file_type.lower() in valid_file_types:
             log.info('Skipping: Not a valid file_type: %s (%s)', file_type, valid_file_types)
             return
-        if file_id in seen_files:
-            log.info('Skipping: The file_id %s in list of seen_files, ignoring...', file_id)
-            return
+
+        with lock:  # 1 thread at the time, prevent duplicate results
+            if file_id in seen_files:
+                log.info('Skipping: The file_id %s in list of seen_files, ignoring...', file_id)
+                return
+            else:
+                seen_files.insert(0, file_id)  # insert in beginning,
+                while len(seen_files) >= 50:   # prevent endless growing list.
+                    seen_files.pop()           # remove at the end
 
         image_name = url_private_download.split('/')[-1]
 
         # Don't keep images, throw away when validated.
         with tempfile.NamedTemporaryFile(suffix=image_name, dir='/data/') as f:
-            seen_files.insert(0, file_id)
-            while len(seen_files) >= 50:  # prevent endless growing list.
-                seen_files.remove(len(seen_files) - 1)
-
             headers = {"Authorization": "Bearer " + self.slack.token}
             response = requests.get(url_private_download, headers=headers)
 
