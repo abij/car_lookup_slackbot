@@ -277,7 +277,7 @@ class Bot:
         self.post_chat_messge(channels, file_id, msg, "Low confidence")
 
     def comment_no_plates_found(self, channels, file_id):
-        self.post_chat_messge(channels, file_id, "No plates were found", "No plates found")
+        self.post_chat_messge(channels, file_id, "No plates were found. Try `/kenteken [license plate]` if _you_ can OCR a license plate from that image.", "No plates found")
 
     def comment_with_match(self, channels, file_id, plate, confidence, details):
         if details:
