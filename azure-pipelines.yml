@@ -35,6 +35,7 @@ steps:
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
   - task: Docker@1
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Docker login
     inputs:
       command: login
@@ -52,12 +53,14 @@ steps:
 #  TODO: run the container to see if it actually starts up...
 
   - task: Docker@1
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Docker push
     inputs:
       command: push
       imageName: $(image.name)
 
   - task: AzureCLI@1
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Restart car-lookup container group
     inputs:
       azureSubscription: azure-car-lookup-rg
