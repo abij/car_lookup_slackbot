@@ -10,6 +10,7 @@ app = Flask(__name__)
 
 # For (local) testing, I want to be able to start the app anyway.
 if 'SLACK_SIGNING_SECRET' not in os.environ:
+    # pylint: disable=E1101
     app.logger.error('Missing environment param: "SLACK_SIGNING_SECRET", cannot receive events from Slack!')
 SIGNING_SECRET = os.environ.get('SLACK_SIGNING_SECRET', '')
 
@@ -51,6 +52,7 @@ def thanks():
 def event_file_created(event_data):
     team_id = event_data["team_id"]
     file_id = event_data["event"]["file_id"]
+    # pylint: disable=E1101
     app.logger.info('Received "file_created" event, file_id: %s, team_id: %s', file_id, team_id)
     pyBot.lookup_car_from_file(team_id, file_id)
 
@@ -59,6 +61,7 @@ def event_file_created(event_data):
 def event_shared_created(event_data):
     team_id = event_data["team_id"]
     file_id = event_data["event"]["file_id"]
+    # pylint: disable=E1101
     app.logger.info('Received "file_shared" event, file_id: %s, team_id: %s', file_id, team_id)
     pyBot.lookup_car_from_file(team_id, file_id)
 
