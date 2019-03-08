@@ -1,36 +1,23 @@
 import os
 from flask import Flask, request, make_response, render_template
+from slackeventsapi import SlackEventAdapter
 
 from slackbot import bot
-from concurrent.futures import ThreadPoolExecutor
 
 pyBot = bot.Bot()
 app = Flask(__name__)
 
-# DOCS https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
-executor = ThreadPoolExecutor(4)
+
+# For (local) testing, I want to be able to start the app anyway.
+if 'SLACK_SIGNING_SECRET' not in os.environ:
+    # pylint: disable=E1101
+    app.logger.error('Missing environment param: "SLACK_SIGNING_SECRET", cannot receive events from Slack!')
+SIGNING_SECRET = os.environ.get('SLACK_SIGNING_SECRET', '')
+
+slack_events_adapter = SlackEventAdapter(SIGNING_SECRET, "/listening", app)
 
 
-def _event_handler(event_type, slack_event):
-    """
-    A helper function that routes events from Slack to our Bot
-    by event type and subtype.
-    """
-    team_id = slack_event["team_id"]
-
-    # ================ File created/shared events =============== #
-    # A file is uploaded!
-    if event_type in ["file_created", "file_shared"]:
-        # pylint: disable=E1101
-        file_id = slack_event["event"]["file_id"]
-        app.logger.info('Received "%s" event, file_id: %s, team_id: %s', event_type, file_id, team_id)
-        executor.submit(pyBot.lookup_car_from_file, team_id, file_id)
-        return make_response("File message received", 202)
-
-    # ============= Event Type Not Found! ============= #
-    message = "You have not added an event handler for the %s" % event_type
-    return make_response(message, 200, {"X-Slack-No-Retry": 1})
-
+# OAuth ########################################
 
 @app.route("/install", methods=["GET"])
 def pre_install():
@@ -59,51 +46,32 @@ def thanks():
     return render_template("thanks.html")
 
 
-@app.route("/listening", methods=["GET", "POST"])
-def hears():
-    """
-    This route listens for incoming events from Slack and uses the event
-    handler helper function to route events to our Bot.
-    """
-    slack_event = request.get_json()
+# Event api ########################################
 
-    # ============= Slack URL Verification ============ #
-    # In order to verify the url of our endpoint, Slack will send a challenge
-    # token in a request and check for this token in the response our endpoint
-    # sends back.
-    #       For more info: https://api.slack.com/events/url_verification
-    if "challenge" in slack_event:
-        return make_response(slack_event["challenge"], 200,
-                             {"content_type": "application/json"})
+@slack_events_adapter.on("file_created")
+def event_file_created(event_data):
+    team_id = event_data["team_id"]
+    file_id = event_data["event"]["file_id"]
+    # pylint: disable=E1101
+    app.logger.info('Received "file_created" event, file_id: %s, team_id: %s', file_id, team_id)
+    pyBot.lookup_car_from_file(team_id, file_id)
 
-    # ============ Slack Token Verification =========== #
-    # We can verify the request is coming from Slack by checking that the
-    # verification token in the request matches our app's settings
-    if pyBot.verification != slack_event.get("token"):
-        message = "Invalid Slack verification token: %s \npyBot has: \
-                   %s\n\n" % (slack_event["token"], pyBot.verification)
-        # By adding "X-Slack-No-Retry" : 1 to our response headers, we turn off
-        # Slack's automatic retries during development.
-        make_response(message, 403, {"X-Slack-No-Retry": 1})
 
-    # ====== Process Incoming Events from Slack ======= #
-    # If the incoming request is an Event we've subcribed to
-    if "event" in slack_event:
-        event_type = slack_event["event"]["type"]
-        # Then handle the event by event_type and have your bot respond
-        return _event_handler(event_type, slack_event)
+@slack_events_adapter.on("file_shared")
+def event_shared_created(event_data):
+    team_id = event_data["team_id"]
+    file_id = event_data["event"]["file_id"]
+    # pylint: disable=E1101
+    app.logger.info('Received "file_shared" event, file_id: %s, team_id: %s', file_id, team_id)
+    pyBot.lookup_car_from_file(team_id, file_id)
 
-    # If our bot hears things that are not events we've subscribed to,
-    # send a quirky but helpful error response
-    return make_response("[NO EVENT IN SLACK REQUEST] These are not the droids\
-                         you're looking for.", 404, {"X-Slack-No-Retry": 1})
 
+# Slack handles ########################################
 
 @app.route("/kenteken", methods=["POST"])
 @app.route("/my_car", methods=["POST"])
 def slack_commands():
     # pylint: disable=E1101
-
     form_dict = request.form
 
     command = form_dict['command']
