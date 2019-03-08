@@ -1,7 +1,6 @@
 import os
 import tempfile
 import requests
-import re
 import logging
 
 from threading import Lock
@@ -12,6 +11,7 @@ import tenacity
 from slackbot.rdw import RdwOnlineClient
 from slackbot.owners import CarOwners
 from slackbot.computervision import OpenAlprLicenceplaceExtractor
+from slackbot import licence_plate
 from slackbot import messages
 
 log = logging.getLogger(__name__)
@@ -107,50 +107,42 @@ class Bot:
         self.slack = SlackClient(token)
 
     def command_kenteken(self, text):
-        usage = 'Lookup car details including the owner (if known):\n' \
-                '`AA-12-BB`  _(dashes are optional)_'
-
         if 'help' in text.lower().strip():
-            return usage
+            return messages.command_kenteken_usage
 
-        kenteken = text.replace('-', '').upper()
-        if not re.match('\w+-?\w+-?\w+', kenteken) or len(kenteken) != 6:
-            return 'Input ({}) does not look like a valid licence plate'.format(text)
+        plate = licence_plate.normalize(text)
+        if not licence_plate.is_valid(plate):
+            return messages.command_invalid_licence_plate(text)
 
-        details = self.get_kenteken_details(kenteken)
+        details = self.get_licence_plate_details(plate)
         if not details:
             return messages.lookup_no_details_found
         return messages.lookup_found_with_details(text, details)
 
     def command_my_car(self, user_id, text):
-        usage = 'Register or unregister a car to your Slack handle:\n' \
-                ' `tag AA-12-BB`  _(to add a car that belongs to you)_\n' \
-                ' `untag AA-12-BB`  _(removes this car)_'
-
         if 'help' in text.lower().strip():
-            return usage
+            return messages.command_usage
 
         words = text.split(" ")
-        subcommand = words[0]
+        sub_command = words[0]
 
         if len(words) != 2:
-            return 'Invalid nr of arguments. Expects 2, given {}.\nUsage:\n{}'.format(len(words), usage)
+            return messages.command_invalid_usage(len(words))
 
-        kenteken = words[1]
-        kenteken = kenteken.replace('-', '').upper()
+        plate = licence_plate.normalize(words[1])
 
-        if len(kenteken) != 6:
-            return 'Invalid kenteken, should be 8 chars (including minus signs)'
+        if not licence_plate.is_valid(plate):
+            return messages.command_invalid_licence_plate(words[1])
 
-        if 'tag' == subcommand.lower():
+        if 'tag' == sub_command.lower():
             # TODO lookup the real name of the user, for the csv.
-            self.car_owners.tag(user_id, kenteken, name="")
-            return 'Added {} to your slack handle'.format(kenteken)
-        elif 'untag' == subcommand.lower():
-            self.car_owners.untag(user_id, kenteken)
-            return 'Removed the licence plate {}'.format(kenteken)
+            self.car_owners.tag(user_id, plate, name="")
+            return messages.command_tag_added_to_you(plate)
+        elif 'untag' == sub_command.lower():
+            self.car_owners.untag(user_id, plate)
+            return messages.command_untag(plate)
 
-        return usage
+        return messages.command_usage
 
     def lookup_car_from_file(self, team_id, file_id, threshold=85.0):
         if len(authed_teams) > 0 and team_id not in authed_teams:
@@ -211,20 +203,51 @@ class Bot:
             idx = -1  # marker for no results.
             for idx, match in enumerate(self.licenceplateExtractor.find_licenceplates(f.name)):
                 confidence = match['confidence']
-                kenteken = match['plate']
+                plate = match['plate']
                 valid = match['valid_nl_pattern']
-                log.info('Found a licenplace match: %s, confidence: %s, valid: %s', kenteken, confidence, valid)
+                log.info('Found a licence place match: %s, confidence: %s, valid: %s', plate, confidence, valid)
 
                 if confidence < threshold or not valid:
-                    log.info('Valid pattern: %s or Confidence %s lower then threshold (%s).', valid, confidence, threshold)
-                    self.comment_low_confidence(channels, confidence, kenteken, file_id, valid)
+                    log.info('Valid pattern: %s or Confidence %s lower then threshold (%s).',
+                             valid, confidence, threshold)
+                    msg = messages.comment_found_but_skipping(plate, confidence, valid)
+                    self.post_chat_message(channels, file_id, msg, log_descr="Low confidence/Invalid pattern")
                     continue
 
-                details = self.get_kenteken_details(kenteken)
-                self.comment_with_match(channels, file_id, kenteken, confidence, details)
+                details = self.get_licence_plate_details(plate)
+                if details:
+                    msg = messages.comment_found_with_details(plate, confidence, details)
+                else:
+                    msg = messages.comment_found_no_details(plate, confidence)
+                self.post_chat_message(channels, file_id, msg, log_descr="car found")
 
             if idx == -1:
-                self.comment_no_plates_found(channels, file_id)
+                self.post_chat_message(channels, file_id, messages.comment_no_plate_found, log_descr="No plates found")
+
+    def get_licence_plate_details(self, plate):
+        result = {}
+
+        plate = licence_plate.normalize(plate)
+
+        try:
+            owner_lookup = self.car_owners.lookup(plate)
+            if owner_lookup:
+                result.update({
+                    'owner_slackid': owner_lookup['slackid'],
+                    'owner_name': owner_lookup['name']})
+        except Exception as e:
+            log.warning('Failed to car_owner: %s', str(e))
+
+        try:
+            details = self.rdw_client.get_rdw_details(plate)
+            if details:
+                result.update(details)
+        except Exception as e:
+            log.warning('Failed to fetch RDW-details: %s', str(e))
+
+        if len(result.keys()) == 0:
+            return None
+        return result
 
     def post_chat_message(self, channels, file_id, msg, log_descr=None):
         # Comments have changed: https://api.slack.com/changelog/2018-05-file-threads-soon-tread
@@ -237,42 +260,3 @@ class Bot:
                 result = r['error']
             log.info('Shared (%s/%s) channels): Posted message "%s" in channel_id: %s, about file_id: %s. Result: %s',
                      idx + 1, len(channels), log_descr, channel_id, file_id, result)
-
-    def comment_low_confidence(self, channels, confidence, kenteken, file_id, is_valid):
-        msg = messages.comment_found_but_skipping(kenteken, confidence, is_valid)
-        self.post_chat_message(channels, file_id, msg, log_descr="Low confidence/Invalid pattern")
-
-    def comment_no_plates_found(self, channels, file_id):
-        self.post_chat_message(channels, file_id, messages.comment_no_plate_found, log_descr="No plates found")
-
-    def comment_with_match(self, channels, file_id, plate, confidence, details):
-        if details:
-            msg = messages.comment_found_with_details(plate, confidence, details)
-        else:
-            msg = messages.comment_found_no_details(plate, confidence)
-        self.post_chat_message(channels, file_id, msg, log_descr="car found")
-
-    def get_kenteken_details(self, kenteken):
-        result = {}
-
-        kenteken = kenteken.strip().replace('-', '').upper()
-
-        try:
-            owner_lookup = self.car_owners.lookup(kenteken)
-            if owner_lookup:
-                result.update({
-                    'owner_slackid': owner_lookup['slackid'],
-                    'owner_name': owner_lookup['name']})
-        except Exception as e:
-            log.warning('Failed to car_owner: %s', str(e))
-
-        try:
-            details = self.rdw_client.get_rdw_details(kenteken)
-            if details:
-                result.update(details)
-        except Exception as e:
-            log.warning('Failed to fetch RDW-details: %s', str(e))
-
-        if len(result.keys()) == 0:
-            return None
-        return result

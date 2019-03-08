@@ -8,20 +8,45 @@ def _get_owner_from_details(details, default="-"):
     return result
 
 
+command_kenteken_usage = 'Lookup car details including the owner (if known):\n' \
+                         '`AA-12-BB`  _(dashes are optional)_'
+
+
+command_usage = 'Register or unregister a car to your Slack handle:\n' \
+                ' `tag AA-12-BB`  _(to add a car that belongs to you)_\n' \
+                ' `untag AA-12-BB`  _(removes this car)_'
+
+
+def command_invalid_usage(nr_arguments):
+    return 'Invalid nr of arguments. Expects 2, given {}.\nUsage:\n{}'.format(nr_arguments, command_usage)
+
+
+def command_invalid_licence_plate(text):
+    return 'Input ({}) does not look like a valid licence plate (NL-patterns)'.format(text)
+
+
+def command_tag_added_to_you(plate):
+    return 'Added {} to your slack handle'.format(plate)
+
+
+def command_untag(plate):
+    return 'Removed the licence plate {}'.format(plate)
+
+
 lookup_no_details_found = 'No details found...'
 
 
-def lookup_found_with_details(kenteken, details):
+def lookup_found_with_details(plate, details):
     car_type = details.get('handelsbenaming') or '-'
     car_brand = details.get('merk') or '-'
     owner = _get_owner_from_details(details)
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
 
-    return '''Lookup of {kenteken}: *{car_type}* of brand *{car_brand}*
+    return '''Lookup of {plate}: *{car_type}* of brand *{car_brand}*
     > • Owner: {owner}
     > • Price: {price} 
-    > • APK expires: {apk}'''.format(kenteken=kenteken, car_type=car_type, car_brand=car_brand,
+    > • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
                                      owner=owner, price=price, apk=apk)
 
 
@@ -49,11 +74,11 @@ def comment_found_no_details(plate, confidence):
         plate=plate, confidence=confidence)
 
 
-def comment_found_but_skipping(kenteken, confidence, is_valid):
+def comment_found_but_skipping(plate, confidence, is_valid):
     if is_valid:
         msg_pattern = "is valid NL pattern"
     else:
         msg_pattern = "is NOT a valid NL pattern"
 
-    return "Skipping licence plate '{kenteken}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
-        kenteken=kenteken, confidence=confidence, msg_pattern=msg_pattern)
+    return "Skipping licence plate '{plate}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
+        plate=plate, confidence=confidence, msg_pattern=msg_pattern)

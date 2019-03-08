@@ -26,23 +26,23 @@ class TestCarOwners(TestCase):
     def test_lookup_invalid(self):
         with self.assertRaises(AssertionError) as e:
             self.car_owners.lookup('TOO-LONG')
-        assert str(e.exception) == 'Length of the kenteken must be 6 (without any dashes)'
+        assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes)'
 
     def test_lookup_not_found(self):
         result = self.car_owners.lookup('BB123B')
         self.assertIsNone(result)
 
-    def test_tag_invalid_kenteken(self):
+    def test_tag_invalid_licence_plate(self):
         with self.assertRaises(AssertionError) as e:
             self.car_owners.tag('U123456', 'TOOLONG')
-        assert str(e.exception) == 'Length of the kenteken must be 6 (without any dashes)'
+        assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes)'
 
     def test_tag_and_untag(self):
-        new_kenteken = 'CC333C'
-        self.car_owners.tag('U123456', new_kenteken)
+        new_plate = 'CC333C'
+        self.car_owners.tag('U123456', new_plate)
 
         # New entry should be found, and persisted:
-        assert self.car_owners.lookup(new_kenteken) == {'slackid': 'U123456', 'name': None}
+        assert self.car_owners.lookup(new_plate) == {'slackid': 'U123456', 'name': None}
 
         with open(TEST_CSV) as f:
             data = f.readlines()
@@ -52,9 +52,9 @@ class TestCarOwners(TestCase):
         assert line == '"CC333C","U123456",""'
 
         # Lets remove this entry:
-        self.car_owners.untag('U123456', new_kenteken)
+        self.car_owners.untag('U123456', new_plate)
 
         # should not be there anymore (lookup + data-file)
         nr_rows_untagged = sum(1 for _ in open(TEST_CSV))
         assert nr_rows_untagged == (nr_rows - 1)
-        self.assertIsNone(self.car_owners.lookup(new_kenteken))
+        self.assertIsNone(self.car_owners.lookup(new_plate))
