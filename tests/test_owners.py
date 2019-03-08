@@ -39,7 +39,7 @@ class TestCarOwners(TestCase):
 
     def test_tag_and_untag(self):
         new_plate = 'CC333C'
-        self.car_owners.tag('U123456', new_plate)
+        self.car_owners.tag(new_plate, slackid='U123456')
 
         # New entry should be found, and persisted:
         assert self.car_owners.lookup(new_plate) == {'slackid': 'U123456', 'name': None}

@@ -16,13 +16,14 @@ class CarOwners:
         self.owners_df = None
         self.load()
 
-    def tag(self, slackid, plate, name=''):
+    def tag(self, plate, slackid=None, name=None):
         plate = licence_plate.normalize(plate)
         assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes)'
 
         self.load()
         if plate in self.owners_df.index:
-            self.owners_df.loc[plate, 'slackid'] = slackid
+            self.owners_df.loc[plate, 'slackid'] = slackid or ''
+            self.owners_df.loc[plate, 'name'] = name or ''
         else:
             new_data = pd.Series({'slackid': slackid, 'name': name}, name=plate)
             self.owners_df = self.owners_df.append(new_data)

@@ -70,20 +70,24 @@ def event_shared_created(event_data):
 
 @app.route("/kenteken", methods=["POST"])
 @app.route("/my_car", methods=["POST"])
+@app.route("/car", methods=["POST"])
 def slack_commands():
-    # pylint: disable=E1101
     form_dict = request.form
 
+    if not pyBot.is_valid_token(form_dict.get('token')):
+        return make_response(401)  # unauthorized
+
     command = form_dict['command']
-    user_id = form_dict['user_id']  # Slack will render the Display name
     text = form_dict['text']
+    user_id = form_dict['user_id']  # Slack will render the Display name
 
-    if command == '/my_car':
-        return make_response(pyBot.command_my_car(user_id, text))
+    if command == '/car':
+        return make_response(pyBot.command_car(user_id, text))
 
-    if command == '/kenteken':
-        return make_response(pyBot.command_kenteken(text))
+    if command in ['/my_car', '/kenteken']:
+        return make_response("replaced with `/car`")
 
+    # pylint: disable=E1101
     app.logger.warning('Incoming slack command is not implemented: %s', command)
     return make_response("Unknown command...")
 

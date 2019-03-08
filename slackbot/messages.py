@@ -8,25 +8,38 @@ def _get_owner_from_details(details, default="-"):
     return result
 
 
-command_kenteken_usage = 'Lookup car details including the owner (if known):\n' \
-                         '`AA-12-BB`  _(dashes are optional)_'
+command_car_usage = 'Lookup car details including the owner (if known):\n' \
+                    '`AA-12-BB`  _(dashes are optional)_\n' \
+                    '`tag AA-12-BB` _(register your car)_\n' \
+                    '`tag AA-12-BB @slackid` _(register someone else)_\n' \
+                    '`tag AA-12-BB "Jack Sparrow"` _(register someone on name)_\n' \
+                    '`untag AA-12-BB` _(remove this entry)_\n' \
 
-
-command_usage = 'Register or unregister a car to your Slack handle:\n' \
-                ' `tag AA-12-BB`  _(to add a car that belongs to you)_\n' \
+command_tag_usage = 'Register or unregister the owner of a car:\n' \
+                ' `tag AA-12-BB`  _(you are the owner)_\n' \
+                ' `tag AA-12-BB @thatguy`  _(or someone else with a slack handle)_\n' \
+                ' `tag AA-12-BB "The great pirate"`  _(or a quoted string defining the owner)_\n' \
                 ' `untag AA-12-BB`  _(removes this car)_'
 
 
+def command_invalid_owner(owner):
+    return 'Invalid owner "{}" _(must be double-quoted, between 3 - 32 chars and normal text chars)_'.format(owner)
+
+
 def command_invalid_usage(nr_arguments):
-    return 'Invalid nr of arguments. Expects 2, given {}.\nUsage:\n{}'.format(nr_arguments, command_usage)
+    return 'Invalid nr of arguments. Expects at most 3, given {}.\nUsage:\n{}'.format(
+        nr_arguments, command_car_usage)
 
 
 def command_invalid_licence_plate(text):
     return 'Input ({}) does not look like a valid licence plate (NL-patterns)'.format(text)
 
 
-def command_tag_added_to_you(plate):
-    return 'Added {} to your slack handle'.format(plate)
+def command_tag_added(plate, user_id=None, owner=None):
+    if owner:
+        return 'Added {} to "{}"'.format(plate, owner)
+    else:
+        return 'Added {} to {}'.format(plate, user_id)
 
 
 def command_untag(plate):

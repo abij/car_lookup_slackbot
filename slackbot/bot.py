@@ -2,6 +2,8 @@ import os
 import tempfile
 import requests
 import logging
+import hmac
+import re
 
 from threading import Lock
 
@@ -106,43 +108,64 @@ class Bot:
         token = authed_teams[team_id]["bot_token"]
         self.slack = SlackClient(token)
 
-    def command_kenteken(self, text):
-        if 'help' in text.lower().strip():
-            return messages.command_kenteken_usage
+    def command_car(self, user_id, text):
+        if 'help' in text.lower().strip() or len(text.lower().strip()) == 0:
+            return messages.command_car_usage
 
-        plate = licence_plate.normalize(text)
-        if not licence_plate.is_valid(plate):
-            return messages.command_invalid_licence_plate(text)
+        words = text.strip().split(" ")
+        first_cmd = words[0]
 
-        details = self.get_licence_plate_details(plate)
-        if not details:
-            return messages.lookup_no_details_found
-        return messages.lookup_found_with_details(text, details)
+        if len(words) == 1 and first_cmd.lower() in ['tag', 'untag']:
+            return messages.command_tag_usage
 
-    def command_my_car(self, user_id, text):
-        if 'help' in text.lower().strip():
-            return messages.command_usage
+        if len(words) == 1:
+            plate = licence_plate.normalize(first_cmd)
+            if not licence_plate.is_valid(plate):
+                return messages.command_invalid_licence_plate(first_cmd)
+            details = self.get_licence_plate_details(plate)
+            if not details:
+                return messages.lookup_no_details_found
+            return messages.lookup_found_with_details(text, details)
 
-        words = text.split(" ")
-        sub_command = words[0]
+        if first_cmd.lower() in ['tag', 'untag']:
+            sub_command = first_cmd.lower().strip()
 
-        if len(words) != 2:
-            return messages.command_invalid_usage(len(words))
+            plate = licence_plate.normalize(words[1])
+            if not licence_plate.is_valid(plate):
+                return messages.command_invalid_licence_plate(words[1])
 
-        plate = licence_plate.normalize(words[1])
+            if 'tag' == sub_command:
+                if len(words) == 2:
+                    self.car_owners.tag(plate, slackid=user_id)
+                    logging.info('Tagged "%s" to SlackId: %s  (executor: %s)', plate, user_id, user_id)
+                    return messages.command_tag_added(plate, user_id)
 
-        if not licence_plate.is_valid(plate):
-            return messages.command_invalid_licence_plate(words[1])
+                owner = str(' '.join(words[2:])).strip()
+                if owner.startswith('@'):
+                    owner_slack_id = owner
+                    if owner_slack_id.lower() == '@me':
+                        owner_slack_id = user_id
+                    # TODO validate slackId with UserInfo
 
-        if 'tag' == sub_command.lower():
-            # TODO lookup the real name of the user, for the csv.
-            self.car_owners.tag(user_id, plate, name="")
-            return messages.command_tag_added_to_you(plate)
-        elif 'untag' == sub_command.lower():
-            self.car_owners.untag(user_id, plate)
-            return messages.command_untag(plate)
+                    self.car_owners.tag(plate, slackid=owner_slack_id)
+                    logging.info('Tagged "%s" to SlackId: %s  (executor: %s)', plate, owner_slack_id, user_id)
+                    return messages.command_tag_added(plate, owner_slack_id)
 
-        return messages.command_usage
+                elif owner.startswith('"') and owner.endswith('"'):
+                    owner = owner.replace('"', '')
+                    is_valid_owner = re.match(r"^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z.!?]*)*$", owner)
+                    if len(owner) < 3 or len(owner) > 32 or not is_valid_owner:
+                        return messages.command_invalid_owner(owner)
+                    self.car_owners.tag(plate, name=owner)
+                    return messages.command_tag_added(plate, owner=owner)
+                else:
+                    return messages.command_invalid_owner(owner)
+
+            if 'untag' == sub_command:
+                self.car_owners.untag(user_id, plate)
+                return messages.command_untag(plate)
+
+        return messages.command_car_usage
 
     def lookup_car_from_file(self, team_id, file_id, threshold=85.0):
         if len(authed_teams) > 0 and team_id not in authed_teams:
@@ -260,3 +283,9 @@ class Bot:
                 result = r['error']
             log.info('Shared (%s/%s) channels): Posted message "%s" in channel_id: %s, about file_id: %s. Result: %s',
                      idx + 1, len(channels), log_descr, channel_id, file_id, result)
+
+    def is_valid_token(self, token):
+        if self.verification:
+            return hmac.compare_digest(self.verification, token)
+        else:
+            return True
