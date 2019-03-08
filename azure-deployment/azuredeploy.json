@@ -2,6 +2,12 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "containerGroupName": {
+      "type": "string"
+    },
+    "domainnamePrefix": {
+      "type": "string"
+    },
     "StorageaccountName": {
       "type": "string"
     },
@@ -20,21 +26,32 @@
     "slackClientSecret": {
       "type": "securestring"
     },
+    "slackSigningSecret": {
+      "type": "securestring"
+    },
     "rdwApptoken": {
       "type": "securestring"
+    },
+    "carLookupContainerName": {
+      "type": "string",
+      "defaultValue": "car-info-slackbot"
+    },
+    "carLookupContainerImage": {
+      "type": "string",
+      "defaultValue": "bija/car_lookup:latest"
     }
   },
   "resources":[{
-    "name": "car-lookup-slackbot-api",
+    "name": "[parameters('containerGroupName')]",
     "type": "Microsoft.ContainerInstance/containerGroups",
     "apiVersion": "2018-10-01",
     "location": "[resourceGroup().location]",
     "tags": {},
     "properties": {
       "containers": [{
-        "name": "car-info-slackbot",
+        "name": "[parameters('carLookupContainerName')]",
         "properties": {
-          "image": "bija/car_lookup:latest",
+          "image": "[parameters('carLookupContainerImage')]",
           "ports": [{ "port": 5000 }],
           "volumeMounts": [{
             "name": "persistentstorage",
@@ -45,6 +62,7 @@
             {"name": "RWD_APPTOKEN", "value": "[parameters('rdwApptoken')]"},
             {"name": "CLIENT_ID", "value": "[parameters('slackClientId')]"},
             {"name": "CLIENT_SECRET", "secureValue": "[parameters('slackClientSecret')]"},
+            {"name": "SLACK_SIGNING_SECRET", "secureValue": "[parameters('slackSigningSecret')]"},
             {"name": "ACTIVE_TOKEN", "secureValue": "[parameters('slackActivationCode')]"}
           ],
           "resources": {
@@ -56,7 +74,7 @@
       "ipAddress": {
         "ports": [{"protocol": "tcp", "port": 5000}],
         "type": "Public",
-        "dnsNameLabel": "gdd-car-lookup-slackbot"
+        "dnsNameLabel": "[parameters('domainnamePrefix')]"
       },
       "osType": "Linux",
       "volumes": [{

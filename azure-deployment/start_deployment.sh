@@ -1,17 +1,31 @@
 #!/usr/bin/env bash
 
+set -eu
+
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
 rg="car-lookup-rg"
 
 function execute_deployment()
 {
-    az group deployment create \
-        --resource-group $rg \
-        --name car_lookup_slack_api \
-        --template-file azuredeploy.json \
-        --parameters @az-deploy-params.json \
+    echo "Validation the ARM-template..."
+    az group deployment validate \
+        --resource-group ${rg} \
+        --template-file ${SCRIPT_PATH}/azuredeploy.json \
+        --parameters @${SCRIPT_PATH}/az-deploy-params.json \
+        --rollback-on-error \
         --output table
 
-    az container attach -g $rg --name car-lookup-slackbot-api
+    echo "Executing the deployment, create new or try to update existing container..."
+    az group deployment create \
+        --resource-group ${rg} \
+        --name car_lookup_slack_api \
+        --template-file ${SCRIPT_PATH}/azuredeploy.json \
+        --parameters @${SCRIPT_PATH}/az-deploy-params.json \
+        --rollback-on-error \
+        --output table
+
+    az container attach -g ${rg} --name car-lookup-slackbot-api
 }
 
 function ask_correct_subscription()
