@@ -20,7 +20,7 @@ class CarOwners:
         plate = licence_plate.normalize(plate)
         assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes)'
 
-        if slackid.startswith('@'):
+        if slackid and slackid.startswith('@'):
             slackid = slackid[1:]
 
         self.load()
