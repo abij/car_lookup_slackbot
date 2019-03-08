@@ -66,9 +66,13 @@ class TestBot(TestCase):
         assert r == messages.command_invalid_licence_plate('$$-^^^-4')
 
         # Happy Flow
-        r = bot.command_car('@user1', 'tag 12-AAA-4')
-        assert r == 'Added 12AAA4 to @user1'
-        mock_car_owners.tag.assert_called_with('12AAA4', slackid='@user1')
+        r = bot.command_car('user1', 'tag 12-AAA-4')
+        assert r == 'Added 12AAA4 to user1'
+        mock_car_owners.tag.assert_called_with('12AAA4', slackid='user1')
+
+        r = bot.command_car('@user1', 'tag 12-AAA-4 @harry')
+        assert r == 'Added 12AAA4 to @harry'
+        mock_car_owners.tag.assert_called_with('12AAA4', slackid='@harry')
 
         r = bot.command_car('@user1', 'tag 12-AAA-4 "Grote beer"')
         assert r == 'Added 12AAA4 to "Grote beer"'

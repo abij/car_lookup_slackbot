@@ -20,6 +20,9 @@ class CarOwners:
         plate = licence_plate.normalize(plate)
         assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes)'
 
+        if slackid.startswith('@'):
+            slackid = slackid[1:]
+
         self.load()
         if plate in self.owners_df.index:
             self.owners_df.loc[plate, 'slackid'] = slackid or ''
