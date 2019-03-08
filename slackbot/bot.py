@@ -12,6 +12,7 @@ import tenacity
 from slackbot.rdw import RdwOnlineClient
 from slackbot.owners import CarOwners
 from slackbot.computervision import OpenAlprLicenceplaceExtractor
+from slackbot import messages
 
 log = logging.getLogger(__name__)
 
@@ -29,21 +30,6 @@ seen_files = []
 # We should check and add seen_files 1 thread at the time.
 lock = Lock()
 
-KENTEKEN_DETAILS_MSG = '''
-Lookup of {kenteken}: *{car_type}* of brand *{car_brand}*
-> • Owner: {owner}
-> • Price: {price} 
-> • APK expires: {apk}'''
-
-COMMENT_WITH_DETAILS = '''
-:mega: Found licence plate *{plate}* _(confidence {confidence:.2f})_!
-It's a *{car_type}* of brand *{car_brand}*
-> • Owner: {owner}
-> • Price: {price} 
-> • APK expires: {apk}'''
-
-COMMENT_NO_DETAILS = 'I found *{plate}* _(confidence {confidence:.2f})_, but no extra info associated with it...'
-
 
 # Static functions.
 def is_file_not_found(res):
@@ -55,15 +41,6 @@ def is_file_not_found(res):
         log.info('Going to retry, because: "%s"', res['error'])
         return True
     return False
-
-
-def get_owner_from_details(details, default="-"):
-    result = default
-    if details.get('owner_slackid') is not None:
-        result = '<@{}>'.format(details.get('owner_slackid'))
-    elif details.get('owner_name') is not None:
-        result = details.get('owner_name')
-    return result
 
 
 class Bot:
@@ -142,15 +119,8 @@ class Bot:
 
         details = self.get_kenteken_details(kenteken)
         if not details:
-            return 'No details found...'
-
-        return KENTEKEN_DETAILS_MSG.format(
-            kenteken=text,
-            car_type=details.get('handelsbenaming') or '-',
-            car_brand=details.get('merk') or '-',
-            owner=get_owner_from_details(details),
-            apk=details.get('vervaldatum_apk') or '-',
-            price=details.get('catalogusprijs') or '-')
+            return messages.lookup_no_details_found
+        return messages.lookup_found_with_details(text, details)
 
     def command_my_car(self, user_id, text):
         usage = 'Register or unregister a car to your Slack handle:\n' \
@@ -178,7 +148,7 @@ class Bot:
             return 'Added {} to your slack handle'.format(kenteken)
         elif 'untag' == subcommand.lower():
             self.car_owners.untag(user_id, kenteken)
-            return 'Removed the liceneplate {}'.format(kenteken)
+            return 'Removed the licence plate {}'.format(kenteken)
 
         return usage
 
@@ -256,7 +226,7 @@ class Bot:
             if idx == -1:
                 self.comment_no_plates_found(channels, file_id)
 
-    def post_chat_messge(self, channels, file_id, msg, log_msg_descr):
+    def post_chat_message(self, channels, file_id, msg, log_descr=None):
         # Comments have changed: https://api.slack.com/changelog/2018-05-file-threads-soon-tread
         # So lets post a message instead of commenting on the file...
         # requires: chat:write:bot
@@ -266,32 +236,21 @@ class Bot:
             if not r['ok']:
                 result = r['error']
             log.info('Shared (%s/%s) channels): Posted message "%s" in channel_id: %s, about file_id: %s. Result: %s',
-                     idx + 1, len(channels), log_msg_descr, channel_id, file_id, result)
+                     idx + 1, len(channels), log_descr, channel_id, file_id, result)
 
-    def comment_low_confidence(self, channels, confidence, kenteken, file_id, valid):
-        msg_pattern = "is valid NL pattern"
-        if not valid:
-            msg_pattern = "is NOT a valid NL pattern"
-        msg = "Skipping licence plate '{kenteken}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
-                kenteken=kenteken, confidence=confidence, msg_pattern=msg_pattern)
-        self.post_chat_messge(channels, file_id, msg, "Low confidence")
+    def comment_low_confidence(self, channels, confidence, kenteken, file_id, is_valid):
+        msg = messages.comment_found_but_skipping(kenteken, confidence, is_valid)
+        self.post_chat_message(channels, file_id, msg, log_descr="Low confidence/Invalid pattern")
 
     def comment_no_plates_found(self, channels, file_id):
-        self.post_chat_messge(channels, file_id, "No plates were found. Try `/kenteken [license plate]` if _you_ can OCR a license plate from that image.", "No plates found")
+        self.post_chat_message(channels, file_id, messages.comment_no_plate_found, log_descr="No plates found")
 
     def comment_with_match(self, channels, file_id, plate, confidence, details):
         if details:
-            msg = COMMENT_WITH_DETAILS.format(
-                plate=plate,
-                confidence=confidence,
-                car_type=details.get('handelsbenaming') or '-',
-                car_brand=details.get('merk') or '-',
-                owner=get_owner_from_details(details),
-                apk=details.get('vervaldatum_apk') or '-',
-                price=details.get('catalogusprijs') or '-')
+            msg = messages.comment_found_with_details(plate, confidence, details)
         else:
-            msg = COMMENT_NO_DETAILS.format(plate=plate, confidence=confidence)
-        self.post_chat_messge(channels, file_id, msg, "car found")
+            msg = messages.comment_found_no_details(plate, confidence)
+        self.post_chat_message(channels, file_id, msg, log_descr="car found")
 
     def get_kenteken_details(self, kenteken):
         result = {}
