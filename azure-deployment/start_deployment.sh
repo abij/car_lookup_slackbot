@@ -8,6 +8,15 @@ rg="car-lookup-rg"
 
 function execute_deployment()
 {
+    echo "Validation the ARM-template..."
+    az group deployment validate \
+        --resource-group ${rg} \
+        --template-file ${SCRIPT_PATH}/azuredeploy.json \
+        --parameters @${SCRIPT_PATH}/az-deploy-params.json \
+        --rollback-on-error \
+        --output table
+
+    echo "Executing the deployment, create new or try to update existing container..."
     az group deployment create \
         --resource-group ${rg} \
         --name car_lookup_slack_api \
