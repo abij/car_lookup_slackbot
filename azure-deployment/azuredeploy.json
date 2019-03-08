@@ -31,6 +31,14 @@
     },
     "rdwApptoken": {
       "type": "securestring"
+    },
+    "carLookupContainerName": {
+      "type": "string",
+      "defaultValue": "car-info-slackbot"
+    },
+    "carLookupContainerImage": {
+      "type": "string",
+      "defaultValue": "bija/car_lookup:latest"
     }
   },
   "resources":[{
@@ -41,9 +49,9 @@
     "tags": {},
     "properties": {
       "containers": [{
-        "name": "car-info-slackbot",
+        "name": "[parameters('carLookupContainerName')]",
         "properties": {
-          "image": "bija/car_lookup:latest",
+          "image": "[parameters('carLookupContainerImage')]",
           "ports": [{ "port": 5000 }],
           "volumeMounts": [{
             "name": "persistentstorage",

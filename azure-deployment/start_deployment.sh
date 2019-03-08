@@ -2,6 +2,8 @@
 
 set -eu
 
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
 rg="car-lookup-rg"
 
 function execute_deployment()
@@ -9,8 +11,8 @@ function execute_deployment()
     az group deployment create \
         --resource-group ${rg} \
         --name car_lookup_slack_api \
-        --template-file azuredeploy.json \
-        --parameters @az-deploy-params.json \
+        --template-file ${SCRIPT_PATH}/azuredeploy.json \
+        --parameters @${SCRIPT_PATH}/az-deploy-params.json \
         --rollback-on-error \
         --output table
 
