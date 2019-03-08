@@ -63,7 +63,7 @@ def lookup_found_with_details(plate, details):
                                      owner=owner, price=price, apk=apk)
 
 
-comment_no_plate_found = "No plates were found. Try `/kenteken [license plate]` " \
+comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
                          "if _you_ can OCR a license plate from that image."
 
 
