@@ -7,8 +7,16 @@ from slackbot import bot
 pyBot = bot.Bot()
 app = Flask(__name__)
 
-slack_events_adapter = SlackEventAdapter(os.environ.get('SLACK_SIGNING_SECRET'), "/listening", app)
 
+# For (local) testing, I want to be able to start the app anyway.
+if 'SLACK_SIGNING_SECRET' not in os.environ:
+    app.logger.error('Missing environment param: "SLACK_SIGNING_SECRET", cannot receive events from Slack!')
+SIGNING_SECRET = os.environ.get('SLACK_SIGNING_SECRET', '')
+
+slack_events_adapter = SlackEventAdapter(SIGNING_SECRET, "/listening", app)
+
+
+# OAuth ########################################
 
 @app.route("/install", methods=["GET"])
 def pre_install():
@@ -37,6 +45,8 @@ def thanks():
     return render_template("thanks.html")
 
 
+# Event api ########################################
+
 @slack_events_adapter.on("file_created")
 def event_file_created(event_data):
     team_id = event_data["team_id"]
@@ -53,11 +63,12 @@ def event_shared_created(event_data):
     pyBot.lookup_car_from_file(team_id, file_id)
 
 
+# Slack handles ########################################
+
 @app.route("/kenteken", methods=["POST"])
 @app.route("/my_car", methods=["POST"])
 def slack_commands():
     # pylint: disable=E1101
-
     form_dict = request.form
 
     command = form_dict['command']
