@@ -87,11 +87,11 @@ def comment_found_no_details(plate, confidence):
         plate=plate, confidence=confidence)
 
 
-def comment_found_but_skipping(plate, confidence, is_valid):
-    if is_valid:
-        msg_pattern = "is valid NL pattern"
-    else:
-        msg_pattern = "is NOT a valid NL pattern"
+def comment_found_but_skipping(plate, confidence, threshold, is_valid):
+    if not is_valid:
+        return "Skipping licence plate '{plate}', it's NOT a valid NL pattern _(confidence {confidence:.2f})_".format(
+            plate=plate, confidence=confidence)
 
-    return "Skipping licence plate '{plate}', low confidence ({confidence:.2f}) and {msg_pattern}.".format(
-        plate=plate, confidence=confidence, msg_pattern=msg_pattern)
+    return "Skipping licence plate '{plate}', too low confidence ({confidence:.2f} < {threshold:.2f})".format(
+        plate=plate, confidence=confidence, threshold=threshold)
+

@@ -127,10 +127,10 @@ class Bot:
                 return messages.lookup_no_details_found
             return messages.lookup_found_with_details(text, details)
 
-        if first_cmd.lower() in ['tag', 'untag']:
-            sub_command = first_cmd.lower().strip()
-
+        sub_command = first_cmd.lower().strip()
+        if sub_command in ['tag', 'untag']:
             plate = licence_plate.normalize(words[1])
+
             if not licence_plate.is_valid(plate):
                 return messages.command_invalid_licence_plate(words[1])
 
@@ -233,7 +233,7 @@ class Bot:
                 if confidence < threshold or not valid:
                     log.info('Valid pattern: %s or Confidence %s lower then threshold (%s).',
                              valid, confidence, threshold)
-                    msg = messages.comment_found_but_skipping(plate, confidence, valid)
+                    msg = messages.comment_found_but_skipping(plate, confidence, threshold, valid)
                     self.post_chat_message(channels, file_id, msg, log_descr="Low confidence/Invalid pattern")
                     continue
 
