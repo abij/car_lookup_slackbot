@@ -57,9 +57,9 @@ def lookup_found_with_details(plate, details):
     price = details.get('catalogusprijs') or '-'
 
     return '''Lookup of {plate}: *{car_type}* of brand *{car_brand}*
-    > • Owner: {owner}
-    > • Price: {price} 
-    > • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
+     • Owner: {owner}
+     • Price: {price} 
+     • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
                                      owner=owner, price=price, apk=apk)
 
 
@@ -74,12 +74,11 @@ def comment_found_with_details(plate, confidence, details):
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
 
-    return ''':mega: Found licence plate *{plate}* _(confidence {confidence:.2f})_!
-    It's a *{car_type}* of brand *{car_brand}*
-    > • Owner: {owner}
-    > • Price: {price} 
-    > • APK expires: {apk}'''.format(plate=plate, confidence=confidence, car_type=car_type,
-                                     owner=owner, car_brand=car_brand, price=price, apk=apk)
+    return ''':mega: Found *{plate}*, it's a *{car_type}* of brand *{car_brand}*! _(confidence {confidence:.2f})_
+     • Owner: {owner}
+     • Price: {price} 
+     • APK expires: {apk}'''.format(plate=plate, confidence=confidence, car_type=car_type,
+                                    owner=owner, car_brand=car_brand, price=price, apk=apk)
 
 
 def comment_found_no_details(plate, confidence):

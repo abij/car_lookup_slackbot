@@ -35,8 +35,9 @@ class CarOwners:
 
     def untag(self, slackid, plate):
         self.load()
-        self.owners_df.drop([plate], inplace=True)
-        self.save()
+        if plate in self.owners_df.index:
+            self.owners_df.drop([plate], inplace=True)
+            self.save()
 
     def lookup(self, plate):
         """

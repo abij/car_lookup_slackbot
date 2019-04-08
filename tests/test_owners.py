@@ -55,6 +55,9 @@ class TestCarOwners(TestCase):
         self.car_owners.untag('U123456', new_plate)
 
         # should not be there anymore (lookup + data-file)
-        nr_rows_untagged = sum(1 for _ in open(TEST_CSV))
-        assert nr_rows_untagged == (nr_rows - 1)
+        nr_rows_after_untag = sum(1 for _ in open(TEST_CSV))
+        assert nr_rows_after_untag == (nr_rows - 1)
         self.assertIsNone(self.car_owners.lookup(new_plate))
+
+        # Should not crash if it does not exists
+        self.car_owners.untag('U123456', new_plate)
