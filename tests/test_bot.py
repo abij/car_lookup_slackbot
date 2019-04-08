@@ -42,7 +42,7 @@ class TestBot(TestCase):
 
         # Happy Flow
         r = bot.command_car('@user1', 'tag 12-AAA-4')
-        assert r == 'Added 12AAA4 to @user1'
+        assert r == 'Added 12AAA4 to <@user1>'
         mock_car_owners.tag.assert_called_with('12AAA4', slackid='@user1')
 
     @mock.patch('slackbot.rdw.RdwOnlineClient')
@@ -67,11 +67,11 @@ class TestBot(TestCase):
 
         # Happy Flow
         r = bot.command_car('user1', 'tag 12-AAA-4')
-        assert r == 'Added 12AAA4 to user1'
+        assert r == 'Added 12AAA4 to <user1>'
         mock_car_owners.tag.assert_called_with('12AAA4', slackid='user1')
 
         r = bot.command_car('@user1', 'tag 12-AAA-4 @harry')
-        assert r == 'Added 12AAA4 to @harry'
+        assert r == 'Added 12AAA4 to <@harry>'
         mock_car_owners.tag.assert_called_with('12AAA4', slackid='@harry')
 
         r = bot.command_car('@user1', 'tag 12-AAA-4 "Grote beer"')
