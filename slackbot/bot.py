@@ -138,7 +138,7 @@ class Bot:
                 if len(words) == 2:
                     self.car_owners.tag(plate, slackid=user_id)
                     logging.info('Tagged "%s" to SlackId: %s  (executor: %s)', plate, user_id, user_id)
-                    return messages.command_tag_added(plate, user_id)
+                    return messages.command_tag_added(plate, user_id=user_id)
 
                 owner = str(' '.join(words[2:])).strip()
                 if owner.startswith('@'):
@@ -149,7 +149,7 @@ class Bot:
 
                     self.car_owners.tag(plate, slackid=owner_slack_id)
                     logging.info('Tagged "%s" to SlackId: %s  (executor: %s)', plate, owner_slack_id, user_id)
-                    return messages.command_tag_added(plate, owner_slack_id)
+                    return messages.command_tag_added(plate, user_id=owner_slack_id)
 
                 elif owner.startswith('"') and owner.endswith('"'):
                     owner = owner.replace('"', '')

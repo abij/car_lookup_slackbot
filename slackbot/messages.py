@@ -39,7 +39,7 @@ def command_tag_added(plate, user_id=None, owner=None):
     if owner:
         return 'Added {} to "{}"'.format(plate, owner)
     else:
-        return 'Added {} to {}'.format(plate, user_id)
+        return 'Added {} to <{}>'.format(plate, user_id)
 
 
 def command_untag(plate):
