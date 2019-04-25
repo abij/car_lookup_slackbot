@@ -56,7 +56,7 @@ def lookup_found_with_details(plate, details):
     price = details.get('catalogusprijs') or '-'
 
     if isinstance(price, int):
-        price = '€ {:,d}'.format(price).format(price).replace(',', '.')
+        price = '€ {:,d}'.format(price).replace(',', '.')
 
     return '''Lookup of {plate}: *{car_type}* of brand *{car_brand}*
      • Owner: {owner}
@@ -77,7 +77,7 @@ def comment_found_with_details(plate, confidence, details):
     price = details.get('catalogusprijs') or '-'
 
     if isinstance(price, int):
-        price = '€ {:,d}'.format(price).format(price).replace(',', '.')
+        price = '€ {:,d}'.format(price).replace(',', '.')
 
     return ''':mega: Found *{plate}*, it's a *{car_type}* of brand *{car_brand}*! _(confidence {confidence:.2f})_
      • Owner: {owner}
