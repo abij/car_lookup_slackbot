@@ -1,3 +1,8 @@
+import locale
+
+locale.setlocale(locale.LC_ALL, '')
+locale._override_localeconv = {'mon_thousands_sep': '.'}
+
 
 def _get_owner_from_details(details, default=None):
     result = default
@@ -56,11 +61,14 @@ def lookup_found_with_details(plate, details):
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
 
+    if isinstance(price, int):
+        price = '€ ' + locale.format('%d', price, grouping=True, monetary=True)
+
     return '''Lookup of {plate}: *{car_type}* of brand *{car_brand}*
      • Owner: {owner}
      • Price: {price} 
      • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
-                                     owner=owner, price=price, apk=apk)
+                                    owner=owner, price=price, apk=apk)
 
 
 comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
@@ -73,6 +81,9 @@ def comment_found_with_details(plate, confidence, details):
     owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
+
+    if isinstance(price, int):
+        price = '€ ' + locale.format('%d', price, grouping=True, monetary=True)
 
     return ''':mega: Found *{plate}*, it's a *{car_type}* of brand *{car_brand}*! _(confidence {confidence:.2f})_
      • Owner: {owner}
