@@ -1,10 +1,10 @@
 
-def _get_owner_from_details(details, default="-"):
+def _get_owner_from_details(details, default=None):
     result = default
     if details.get('owner_slackid') is not None:
-        result = '<@{}>'.format(details.get('owner_slackid'))
+        return '<@{}>'.format(details.get('owner_slackid'))
     elif details.get('owner_name') is not None:
-        result = details.get('owner_name')
+        return details.get('owner_name')
     return result
 
 
@@ -52,7 +52,7 @@ lookup_no_details_found = 'No details found...'
 def lookup_found_with_details(plate, details):
     car_type = details.get('handelsbenaming') or '-'
     car_brand = details.get('merk') or '-'
-    owner = _get_owner_from_details(details)
+    owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
 
@@ -70,7 +70,7 @@ comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
 def comment_found_with_details(plate, confidence, details):
     car_type = details.get('handelsbenaming') or '-'
     car_brand = details.get('merk') or '-'
-    owner = _get_owner_from_details(details)
+    owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
 
