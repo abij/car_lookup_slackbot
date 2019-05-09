@@ -78,6 +78,10 @@ class TestBot(TestCase):
         assert r == 'Added 12AAA4 to "Grote beer"'
         mock_car_owners.tag.assert_called_with('12AAA4', name='Grote beer')
 
+        r = bot.command_car('@user1', 'tag 12-AAA-4 “WhyTheseQoutes”')
+        assert r == 'Added 12AAA4 to "WhyTheseQoutes"'
+        mock_car_owners.tag.assert_called_with('12AAA4', name='WhyTheseQoutes')
+
     @mock.patch('slackbot.rdw.RdwOnlineClient')
     @mock.patch('slackbot.owners.CarOwners')
     def test_slack_command_car_untag(self, mock_car_owners, mock_rdw_client):

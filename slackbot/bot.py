@@ -141,7 +141,7 @@ class Bot:
                     return messages.command_tag_added(plate, user_id=user_id)
 
                 owner = str(' '.join(words[2:])).strip()
-                match_in_quotes = re.match(r"\"(.+?)\"", owner)
+                match_in_quotes = re.match(r"[\"“](.+?)[\"”]", owner)
 
                 if owner.startswith('@'):
                     owner_slack_id = owner
