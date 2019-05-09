@@ -141,6 +141,8 @@ class Bot:
                     return messages.command_tag_added(plate, user_id=user_id)
 
                 owner = str(' '.join(words[2:])).strip()
+                match_in_quotes = re.match(r"\"(.+?)\"", owner)
+
                 if owner.startswith('@'):
                     owner_slack_id = owner
                     if owner_slack_id.lower() == '@me':
@@ -151,10 +153,9 @@ class Bot:
                     logging.info('Tagged "%s" to SlackId: %s  (executor: %s)', plate, owner_slack_id, user_id)
                     return messages.command_tag_added(plate, user_id=owner_slack_id)
 
-                elif owner.startswith('"') and owner.endswith('"'):
-                    owner = owner.replace('"', '')
-                    is_valid_owner = re.match(r"^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z.!?]*)*$", owner)
-                    if len(owner) < 3 or len(owner) > 32 or not is_valid_owner:
+                elif match_in_quotes:
+                    owner = match_in_quotes.group(1)
+                    if len(owner) < 3 or len(owner) > 32 or not self._is_valid_owner(owner):
                         return messages.command_invalid_owner(owner)
                     self.car_owners.tag(plate, name=owner)
                     return messages.command_tag_added(plate, owner=owner)
@@ -289,3 +290,7 @@ class Bot:
             return hmac.compare_digest(self.verification, token)
         else:
             return True
+
+    @staticmethod
+    def _is_valid_owner(owner):
+        return re.match(r"^[a-zA-Z]+(([',. -]{0,2}[a-zA-Z ])?[a-zA-Z.!?]*)*$", owner) is not None

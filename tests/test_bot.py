@@ -91,3 +91,7 @@ class TestBot(TestCase):
         r = bot.command_car('user1', 'untag 12-AAA-4')
         assert r == 'Removed the licence plate 12AAA4'
         mock_car_owners.untag.assert_called_with('user1', '12AAA4')
+
+    def test_is_valid_owner(self):
+        assert Bot._is_valid_owner("Owner of Who's") == True
+        assert Bot._is_valid_owner("Some name with 'qoute") == True
