@@ -1,8 +1,51 @@
 import logging
 import datetime as dt
+import re
 from sodapy import Socrata
 
 log = logging.getLogger(__name__)
+
+
+special_brand_mapping = {
+    "MERCEDES-BENZ": "Mercedes-Benz",
+    "BMW": "BMW"
+}
+
+special_name_mapping = {
+    "1ER REIHE": "1-Serie",
+    "3ER REIHE": "3-Series",
+    "5ER REIHE": "5-Series",
+    "7ER REIHE": "7-Series",
+    "X REIHE": "X",
+    "VX 50": "VX 50",
+    "MINI": "Mini",
+    "CADDY SDI 51 KW BESTEL": "Caddy"
+}
+
+
+def capitalize_words(s):
+    return re.sub(r'\w+', lambda m:m.group(0).capitalize(), s)
+
+
+def prettify_brand(brand):
+    if brand in special_brand_mapping:
+        return special_brand_mapping[brand]
+    # default: uppercase first letter.
+    return capitalize_words(brand.lower())
+
+
+def prettify_name(brand, name):
+    if name in special_name_mapping:
+        return special_name_mapping[name]
+
+    name = name.replace(brand, "").strip()
+
+    # Its probably a code like: IX35 / DS3 / CX-5
+    if len(name) <= 6 and not name.isalpha():
+        return name
+
+    # default: uppercase first letter.
+    return capitalize_words(name.lower())
 
 
 class RdwOnlineClient:
@@ -34,5 +77,7 @@ class RdwOnlineClient:
             d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%Y%m%d')
             d['vervaldatum_apk'] = d['dt_vervaldatum_apk'].strftime('%d-%m-%Y')
 
-        # TODO Make the names pretty, not always upper (but BMW is upper...)!
+        d['handelsbenaming'] = prettify_name(d['merk'], d['handelsbenaming'])
+        d['merk'] = prettify_brand(d['merk'])
+
         return d

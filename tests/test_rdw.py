@@ -36,7 +36,7 @@ class TestRdwOnlineClient(TestCase):
                     'dt_vervaldatum_apk': dt.datetime(2019, 10, 1, 0, 0),
                     'voertuigsoort': 'Personenauto',
                     'merk': 'BMW',
-                    'handelsbenaming': '1-SERIE',
+                    'handelsbenaming': '1-Serie',
                     'zuinigheidslabel': 'C'}
 
         assert self.rdw_client.get_rdw_details('ab123z') == expected
