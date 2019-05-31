@@ -36,7 +36,7 @@ class TestBot(TestCase):
         mock_car_owners.lookup.assert_called_with('12AAA4')
         mock_rdw_client.get_rdw_details.assert_called_with('12AAA4')
         mock_finnik.get_acceleration_details.assert_called_with('12AAA4')
-        assert r == messages.lookup_no_details_found
+        assert r == messages.lookup_no_details_found("12AAA4")
 
         r = bot.command_car('@user1', 'tag 1234')
         assert r == messages.command_invalid_licence_plate('1234')

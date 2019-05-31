@@ -126,8 +126,8 @@ class Bot:
                 return messages.command_invalid_licence_plate(first_cmd)
             details = self.get_licence_plate_details(plate)
             if not details:
-                return messages.lookup_no_details_found
-            return messages.lookup_found_with_details(text, details)
+                return messages.lookup_no_details_found(plate)
+            return messages.lookup_found_with_details(plate, details)
 
         sub_command = first_cmd.lower().strip()
         if sub_command in ['tag', 'untag']:
@@ -145,6 +145,9 @@ class Bot:
                 owner = str(' '.join(words[2:])).strip()
                 match_in_quotes = re.match(r"[\"“](.+?)[\"”]", owner)
 
+                owner_min_chars = 3
+                owner_max_chars = 32
+
                 if owner.startswith('@'):
                     owner_slack_id = owner
                     if owner_slack_id.lower() == '@me':
@@ -157,12 +160,12 @@ class Bot:
 
                 elif match_in_quotes:
                     owner = match_in_quotes.group(1)
-                    if len(owner) < 3 or len(owner) > 32 or not self._is_valid_owner(owner):
-                        return messages.command_invalid_owner(owner)
+                    if len(owner) < owner_min_chars or len(owner) > owner_max_chars or not self._is_valid_owner(owner):
+                        return messages.command_invalid_owner(owner, min_chars=owner_min_chars, max_chars=owner_max_chars)
                     self.car_owners.tag(plate, name=owner)
                     return messages.command_tag_added(plate, owner=owner)
                 else:
-                    return messages.command_invalid_owner(owner)
+                    return messages.command_invalid_owner(owner, min_chars=owner_min_chars, max_chars=owner_max_chars)
 
             if 'untag' == sub_command:
                 self.car_owners.untag(user_id, plate)
@@ -170,7 +173,7 @@ class Bot:
 
         return messages.command_car_usage
 
-    def lookup_car_from_file(self, team_id, file_id, threshold=85.0):
+    def lookup_car_from_file(self, team_id, file_id, threshold=80.0):
         if len(authed_teams) > 0 and team_id not in authed_teams:
             log.warning('Skipping: team_id %s is not in authorized list. (files.info): %s',
                         team_id, file_id)

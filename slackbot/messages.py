@@ -21,8 +21,9 @@ command_tag_usage = 'Register or unregister the owner of a car:\n' \
                 ' `untag AA-12-BB`  _(removes this car)_'
 
 
-def command_invalid_owner(owner):
-    return 'Invalid owner "{}" _(must be double-quoted, between 3 - 32 chars and normal text chars)_'.format(owner)
+def command_invalid_owner(owner, min_chars=3, max_chars=32):
+    return 'Invalid owner "{}" _(must be double-quoted, between {} - {} chars and normal text chars)_'.format(
+        owner, min_chars, max_chars)
 
 
 def command_invalid_usage(nr_arguments):
@@ -45,7 +46,8 @@ def command_untag(plate):
     return 'Removed the licence plate {}'.format(plate)
 
 
-lookup_no_details_found = 'No details found...'
+def lookup_no_details_found(plate):
+    return '`/car {}` lookup: No details found...'.format(plate)
 
 
 def lookup_found_with_details(plate, details):
@@ -59,10 +61,10 @@ def lookup_found_with_details(plate, details):
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
 
-    return '''Lookup of {plate}: *{car_brand} {car_type}*
+    return '''`/car {plate}` lookup: *{car_brand} {car_type}*
      • Owner: {owner}
      • Price: {price} 
-     • 0-100: {acceleration}
+     • 0-100: {acceleration} sec
      • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
                                     owner=owner, price=price, acceleration=acceleration, apk=apk)
 
@@ -85,7 +87,7 @@ def comment_found_with_details(plate, confidence, details):
     return ''':mega: Found *{plate}*, it's a *{car_brand} {car_type}*! _(confidence {confidence:.2f})_
      • Owner: {owner}
      • Price: {price} 
-     • 0-100: {acceleration}
+     • 0-100: {acceleration} sec
      • APK expires: {apk}'''.format(plate=plate, confidence=confidence, car_type=car_type,
                                     owner=owner, car_brand=car_brand, price=price, acceleration=acceleration, apk=apk)
 
