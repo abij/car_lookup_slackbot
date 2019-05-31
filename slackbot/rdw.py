@@ -16,10 +16,13 @@ special_name_mapping = {
     "3ER REIHE": "3-Series",
     "5ER REIHE": "5-Series",
     "7ER REIHE": "7-Series",
+    "Z REIHE": "Z",
     "X REIHE": "X",
     "VX 50": "VX 50",
     "MINI": "Mini",
-    "CADDY SDI 51 KW BESTEL": "Caddy"
+    "ASTRA+": "Astra+",
+    "CADDY SDI 51 KW BESTEL": "Caddy",
+    "PARTNER 170C 1.9D": "Partner"
 }
 
 
@@ -38,7 +41,7 @@ def prettify_name(brand, name):
     if name in special_name_mapping:
         return special_name_mapping[name]
 
-    name = name.replace(brand, "").strip()
+    name = name.replace(brand, "").replace(brand.replace(" ", ""), "").strip()
 
     # Its probably a code like: IX35 / DS3 / CX-5
     if len(name) <= 6 and not name.isalpha():

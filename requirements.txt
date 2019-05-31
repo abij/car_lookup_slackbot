@@ -5,6 +5,7 @@ slackeventsapi
 tornado>=4.5
 slackclient==1.3.0
 requests
+beautifulsoup4
 sodapy
 pandas
 tenacity

@@ -54,6 +54,7 @@ def lookup_found_with_details(plate, details):
     owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
+    acceleration = details.get('acceleration') or '-'
 
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
@@ -61,8 +62,9 @@ def lookup_found_with_details(plate, details):
     return '''Lookup of {plate}: *{car_brand} {car_type}*
      • Owner: {owner}
      • Price: {price} 
+     • 0-100: {acceleration}
      • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
-                                    owner=owner, price=price, apk=apk)
+                                    owner=owner, price=price, acceleration=acceleration, apk=apk)
 
 
 comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
@@ -75,6 +77,7 @@ def comment_found_with_details(plate, confidence, details):
     owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
     apk = details.get('vervaldatum_apk') or '-'
     price = details.get('catalogusprijs') or '-'
+    acceleration = details.get('acceleration') or '-'
 
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
@@ -82,8 +85,9 @@ def comment_found_with_details(plate, confidence, details):
     return ''':mega: Found *{plate}*, it's a *{car_brand} {car_type}*! _(confidence {confidence:.2f})_
      • Owner: {owner}
      • Price: {price} 
+     • 0-100: {acceleration}
      • APK expires: {apk}'''.format(plate=plate, confidence=confidence, car_type=car_type,
-                                    owner=owner, car_brand=car_brand, price=price, apk=apk)
+                                    owner=owner, car_brand=car_brand, price=price, acceleration=acceleration, apk=apk)
 
 
 def comment_found_no_details(plate, confidence):

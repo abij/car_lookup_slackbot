@@ -1,6 +1,6 @@
 from unittest import mock, TestCase
 
-from slackbot.rdw import RdwOnlineClient
+from slackbot.rdw import RdwOnlineClient, prettify_name, prettify_brand
 import datetime as dt
 
 SOCRATA_RES_DATA = {
@@ -48,3 +48,7 @@ class TestRdwOnlineClient(TestCase):
         mock_socrata_get.return_value = []
         details = self.rdw_client.get_rdw_details('ab123z')
         self.assertIsNone(details)
+
+    def test_prettify_brand(self):
+        assert prettify_brand("VOLKSWAGEN") == "Volkswagen"
+        assert prettify_brand("BMW") == "BMW"

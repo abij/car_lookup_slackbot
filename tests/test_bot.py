@@ -19,18 +19,23 @@ class TestBot(TestCase):
         r = bot.command_car('@user1', '')
         assert r == messages.command_car_usage
 
+    @mock.patch('slackbot.finnik.FinnikOnlineClient')
     @mock.patch('slackbot.rdw.RdwOnlineClient')
     @mock.patch('slackbot.owners.CarOwners')
-    def test_slack_command_car_lookup(self, mock_car_owners, mock_rdw_client):
+    def test_slack_command_car_lookup(self, mock_car_owners, mock_rdw_client, mock_finnik):
         mock_car_owners.lookup.return_value = None
         mock_rdw_client.get_rdw_details.return_value = None
+        mock_finnik.get_acceleration_details.return_value = None
 
         bot = Bot()
         bot.car_owners = mock_car_owners
         bot.rdw_client = mock_rdw_client
+        bot.finnik_client= mock_finnik
 
         r = bot.command_car('@user1', '12-AAA-4')
         mock_car_owners.lookup.assert_called_with('12AAA4')
+        mock_rdw_client.get_rdw_details.assert_called_with('12AAA4')
+        mock_finnik.get_acceleration_details.assert_called_with('12AAA4')
         assert r == messages.lookup_no_details_found
 
         r = bot.command_car('@user1', 'tag 1234')
@@ -45,12 +50,14 @@ class TestBot(TestCase):
         assert r == 'Added 12AAA4 to <@user1>'
         mock_car_owners.tag.assert_called_with('12AAA4', slackid='@user1')
 
+    @mock.patch('slackbot.finnik.FinnikOnlineClient')
     @mock.patch('slackbot.rdw.RdwOnlineClient')
     @mock.patch('slackbot.owners.CarOwners')
-    def test_slack_command_car_tagging(self, mock_car_owners, mock_rdw_client):
+    def test_slack_command_car_tagging(self, mock_car_owners, mock_rdw_client, mock_finnik):
         bot = Bot()
         bot.car_owners = mock_car_owners
         bot.rdw_client = mock_rdw_client
+        bot.finnik_client = mock_finnik
 
         r = bot.command_car('@user1', 'tag')
         assert r == messages.command_tag_usage

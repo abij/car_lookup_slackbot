@@ -11,6 +11,7 @@ from slackclient import SlackClient
 import tenacity
 
 from slackbot.rdw import RdwOnlineClient
+from slackbot.finnik import FinnikOnlineClient
 from slackbot.owners import CarOwners
 from slackbot.computervision import OpenAlprLicenceplaceExtractor
 from slackbot import licence_plate
@@ -72,6 +73,7 @@ class Bot:
         self.car_owners = CarOwners(csv_path=os.environ.get('CAR_OWNERS_FILE', '/data/car-owners.csv'))
 
         self.licenceplateExtractor = OpenAlprLicenceplaceExtractor()
+        self.finnik_client = FinnikOnlineClient()
 
     def auth(self, code):
         """
@@ -252,7 +254,7 @@ class Bot:
         result = {}
 
         plate = licence_plate.normalize(plate)
-
+        # TODO: Async 3 services at the same time.
         try:
             owner_lookup = self.car_owners.lookup(plate)
             if owner_lookup:
@@ -268,6 +270,13 @@ class Bot:
                 result.update(details)
         except Exception as e:
             log.warning('Failed to fetch RDW-details: %s', str(e))
+
+        try:
+            acceleration = self.finnik_client.get_acceleration_details(plate)
+            if acceleration:
+                result.update({'acceleration': acceleration})
+        except Exception as e:
+            log.warning('Failed to fetch acceleration from Finnik: %s', str(e))
 
         if len(result.keys()) == 0:
             return None
