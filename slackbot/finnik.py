@@ -54,13 +54,18 @@ class FinnikOnlineClient:
             'brand': div_base.find('div', id='value-basis-gegevens-merk').text,
             'model': div_base.find('div', id='value-basis-gegevens-model').text,
             'apk': div_summary.find(id="value-apk").text,
-            'price': self._get_price(soup),
+            'price': self._get_price(div_summary),
             'acceleration': self._get_acceleration(div_summary, plate),
         }
 
-    def _get_price(self, soup):
-        costs_with_markup = soup.find(id="value-nieuwprijs").text
-        return int("".join(re.findall(r'\d+', costs_with_markup)))
+    def _get_price(self, div_summary):
+        costs_with_markup = div_summary.find(id="value-nieuwprijs")
+        if not costs_with_markup:
+            log.warning("Successful response, but element (id='value-nieuwprijs') not found! "
+                        "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
+            self.enable_service_timeout()
+            return None
+        return int("".join(re.findall(r'\d+', costs_with_markup.text)))
 
     def _get_acceleration(self, div_summary, plate):
         acceleration_item = div_summary.find(id="value-acceleratie")
