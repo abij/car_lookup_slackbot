@@ -1,17 +1,14 @@
 from unittest import mock, TestCase
 
-from slackbot.rdw import RdwOnlineClient, prettify_name, prettify_brand
-import datetime as dt
+from slackbot.rdw import RdwOnlineClient, prettify_model, prettify_brand
 
 SOCRATA_RES_DATA = {
-    'catalogusprijs': '12345',
     'kenteken': 'AB123ZZ',
+    'merk': 'BMW',
+    'handelsbenaming': '1ER REIHE',
+    'catalogusprijs': '12345',
     #'vervaldatum_apk': '01/10/2019', update from opendata.rdw.nl on mid Februari
     'vervaldatum_apk': '20191001',
-    'voertuigsoort': 'Personenauto',
-    'merk': 'BMW',
-    'handelsbenaming': '1-SERIE',
-    'zuinigheidslabel': 'C'
 }
 
 
@@ -30,14 +27,13 @@ class TestRdwOnlineClient(TestCase):
     def test_getting_success_response(self, mock_socrata_get):
         mock_socrata_get.return_value = [SOCRATA_RES_DATA]
 
-        expected = {'catalogusprijs': 12345,
-                    'kenteken': 'AB123ZZ',
-                    'vervaldatum_apk': '01-10-2019',
-                    'dt_vervaldatum_apk': dt.datetime(2019, 10, 1, 0, 0),
-                    'voertuigsoort': 'Personenauto',
-                    'merk': 'BMW',
-                    'handelsbenaming': '1-Serie',
-                    'zuinigheidslabel': 'C'}
+        expected = {'plate': 'AB123ZZ',
+                    'brand': 'BMW',
+                    'model': '1-Serie',
+                    'price': 12345,
+                    'apk': '01-10-2019',
+                    'acceleration': None
+                    }
 
         assert self.rdw_client.get_rdw_details('ab123z') == expected
         assert self.rdw_client.get_rdw_details('AB123Z') == expected

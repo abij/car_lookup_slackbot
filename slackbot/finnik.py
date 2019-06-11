@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 import datetime as dt
 from slackbot import licence_plate
+import re
 
 DEFAULT_SERVICE_FAILURE_TIMEOUT_SEC = 15
 SERVICE_FAILURE_EXPONENTIAL_MULTIPLIER = 2
@@ -19,7 +20,7 @@ class FinnikOnlineClient:
     last_failure = None
     service_failure_timeout = DEFAULT_SERVICE_FAILURE_TIMEOUT_SEC
 
-    def get_acceleration_details(self, plate):
+    def get_car_details(self, plate):
         plate = licence_plate.normalize(plate)
         assert len(plate) == 6, 'Length of the licenceplate must be 6 (without any dashes).'
 
@@ -40,19 +41,33 @@ class FinnikOnlineClient:
         self.disable_service_timeout()
 
         soup = BeautifulSoup(res.content, "html.parser")
+        div_base = soup.find('div', id="base")
+        div_summary = soup.find("div", id="summary-new")
 
-        div = soup.find("div", id="summary-new")
-        if not div:
-            log.warning("Successful response, but element ('div', id='summary-new') not found! "
+        if not div_base or not div_summary:
+            log.warning("Successful response, but element div with id='base' or id='summary-new') not found! "
                         "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
-            self.last_failure = dt.datetime.now()
+            self.enable_service_timeout()
             return None
 
-        acceleration_item = div.find(id="value-acceleratie")
+        return {
+            'brand': div_base.find('div', id='value-basis-gegevens-merk').text,
+            'model': div_base.find('div', id='value-basis-gegevens-model').text,
+            'apk': div_summary.find(id="value-apk").text,
+            'price': self._get_price(soup),
+            'acceleration': self._get_acceleration(div_summary, plate),
+        }
+
+    def _get_price(self, soup):
+        costs_with_markup = soup.find(id="value-nieuwprijs").text
+        return int("".join(re.findall(r'\d+', costs_with_markup)))
+
+    def _get_acceleration(self, div_summary, plate):
+        acceleration_item = div_summary.find(id="value-acceleratie")
         if not acceleration_item:
             log.warning("Successful response, but element (id='value-acceleratie') not found! "
                         "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
-            self.last_failure = dt.datetime.now()
+            self.enable_service_timeout()
             return None
 
         acceleration = acceleration_item.text.replace("seconden", "").strip()

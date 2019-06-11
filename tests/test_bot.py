@@ -25,7 +25,7 @@ class TestBot(TestCase):
     def test_slack_command_car_lookup(self, mock_car_owners, mock_rdw_client, mock_finnik):
         mock_car_owners.lookup.return_value = None
         mock_rdw_client.get_rdw_details.return_value = None
-        mock_finnik.get_acceleration_details.return_value = None
+        mock_finnik.get_car_details.return_value = None
 
         bot = Bot()
         bot.car_owners = mock_car_owners
@@ -35,7 +35,7 @@ class TestBot(TestCase):
         r = bot.command_car('@user1', '12-AAA-4')
         mock_car_owners.lookup.assert_called_with('12AAA4')
         mock_rdw_client.get_rdw_details.assert_called_with('12AAA4')
-        mock_finnik.get_acceleration_details.assert_called_with('12AAA4')
+        mock_finnik.get_car_details.assert_called_with('12AAA4')
         assert r == messages.lookup_no_details_found("12AAA4")
 
         r = bot.command_car('@user1', 'tag 1234')

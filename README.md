@@ -2,15 +2,15 @@
 
 [![Build Status](https://dev.azure.com/alexanderbij/alexanderbij/_apis/build/status/abij.car_lookup_slackbot?branchName=master)](https://dev.azure.com/alexanderbij/alexanderbij/_build/latest?definitionId=1&branchName=master)
 
-Slackbot to scan images for licence plates and report the known car details:
+Slackbot to scan images for licence plates and report the known car details. The car owners are fetched from a csv-file on a fileshare.
 
 ![slack-bot-car-lookup](docs/slackbot-car-lookup.png)
 
 ## Hosting
 
 - Create an app in [api.slack.com](https://api.slack.com/apps)
-    - configure /kenteken and /my_car
-    - configure event-api for
+    - configure `/car` slack commmand
+    - configure event-api on file_created / file_shared events in channel-scope
 - Host as a docker container in the cloud, or use nGrok while testing.
     - Pass environment variables from Slack and/or opendata.rdw.nl
         - `ACTIVE_TOKEN` OAuth _Bot User OAuth Access Token_ (xoxb-***)
@@ -32,9 +32,9 @@ Only if Flask is running in debug mode:
 
 #### TODO's:
 
-- More secure incoming connection
-    - Use `from slackeventsapi import SlackEventAdapter` see: https://github.com/slackapi/python-slack-events-api
-    - Include LetsEncrypt for a valid TLS connection.
-    - Validate events from Slack
-- Use a single command `/kenteken` and not also `/my_car` and use an english name, I like: `/car` simple and short!
-- Make the bot Workspace independend: Its now for a single Workspace (Xebia) using one fileshare with a single csv-file
+- Make the bot Workspace independend: Its now for a single Workspace (Xebia) using one fileshare with a single csv-file.
+- Make API calls in parallel to reduce total time for a request. (A slack command must answer in 3 sec.)
+- Security: 
+    - Limit the incoming traffic from Slack or validate event hashes. 
+    - Add an TSL-certificate using letsencrypt
+    - Pin Slack SSL certification.

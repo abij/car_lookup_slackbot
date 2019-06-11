@@ -2,7 +2,20 @@ from unittest import mock, TestCase
 
 from slackbot.finnik import FinnikOnlineClient
 
-FINNIK_RES_DATA = '<html><body><div id="summary-new"><li id="value-acceleratie">5,6 seconden</li></div></body></html>'
+FINNIK_RES_DATA = """
+<html>
+<body>
+    <div id="base">
+        <div id="value-basis-gegevens-merk">BMW</div>
+        <div id="value-basis-gegevens-model">3-Serie</div>
+    </div>
+    <div id="summary-new">
+        <li id="value-acceleratie">5,6 seconden</li>
+        <li id="value-apk">14-02-2023</li>
+        <li id="value-nieuwprijs">€ 1.123.456,-</li>
+    </div>
+</body>
+</html>"""
 
 
 class TestFinnikOnlineClient(TestCase):
@@ -40,16 +53,21 @@ class TestFinnikOnlineClient(TestCase):
 
     def test_invalid_too_long(self):
         with self.assertRaises(AssertionError) as e:
-            self.finnik_client.get_acceleration_details('tooLong')
+            self.finnik_client.get_car_details('tooLong')
             assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes).'
 
     @mock.patch('requests.get')
     def test_getting_success_response(self, mock_requests):
         mock_requests.return_value = self._mock_response(content=FINNIK_RES_DATA)
-        assert self.finnik_client.get_acceleration_details('ab123z') == "5,6"
-
+        assert self.finnik_client.get_car_details('ab123z') == {
+            'brand': "BMW",
+            'model': "3-Serie",
+            'apk': "14-02-2023",
+            'price': 1123456,
+            'acceleration': "5,6"
+        }
     @mock.patch('requests.get')
     def test_not_found(self, mock_requests):
         mock_requests.return_value = self._mock_response()
-        details = self.finnik_client.get_acceleration_details('ab123z')
+        details = self.finnik_client.get_car_details('ab123z')
         self.assertIsNone(details)

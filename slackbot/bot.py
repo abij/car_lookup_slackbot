@@ -275,9 +275,12 @@ class Bot:
             log.warning('Failed to fetch RDW-details: %s', str(e))
 
         try:
-            acceleration = self.finnik_client.get_acceleration_details(plate)
-            if acceleration:
-                result.update({'acceleration': acceleration})
+            details = self.finnik_client.get_car_details(plate)
+            if details:
+                # Do not overwrite existing values.
+                # So the RDW has preference over Finnik.
+                missing_values = {k: v for k, v in details if v and not result.get(k)}
+                result.update(missing_values)
         except Exception as e:
             log.warning('Failed to fetch acceleration from Finnik: %s', str(e))
 

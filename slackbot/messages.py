@@ -51,21 +51,21 @@ def lookup_no_details_found(plate):
 
 
 def lookup_found_with_details(plate, details):
-    car_type = details.get('handelsbenaming') or '-'
-    car_brand = details.get('merk') or '-'
-    owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
-    apk = details.get('vervaldatum_apk') or '-'
-    price = details.get('catalogusprijs') or '-'
+    model = details.get('model') or '-'
+    car_brand = details.get('brand') or '-'
+    owner = _get_owner_from_details(details) or '- _(`/car tag` to add owner)_'
+    apk = details.get('apk') or '-'
+    price = details.get('price') or '-'
     acceleration = details.get('acceleration') or '-'
 
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
 
-    return '''`/car {plate}` lookup: *{car_brand} {car_type}*
+    return '''`/car {plate}` lookup: *{car_brand} {model}*
      • Owner: {owner}
      • Price: {price} 
      • 0-100: {acceleration} sec
-     • APK expires: {apk}'''.format(plate=plate, car_type=car_type, car_brand=car_brand,
+     • APK expires: {apk}'''.format(plate=plate, model=model, car_brand=car_brand,
                                     owner=owner, price=price, acceleration=acceleration, apk=apk)
 
 
@@ -74,21 +74,21 @@ comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
 
 
 def comment_found_with_details(plate, confidence, details):
-    car_type = details.get('handelsbenaming') or '-'
-    car_brand = details.get('merk') or '-'
-    owner = _get_owner_from_details(details) or '- _(Use `/car tag` to add the owner)_'
-    apk = details.get('vervaldatum_apk') or '-'
-    price = details.get('catalogusprijs') or '-'
+    model = details.get('model') or '-'
+    car_brand = details.get('brand') or '-'
+    owner = _get_owner_from_details(details) or '- _(`/car tag` to add owner)_'
+    apk = details.get('apk') or '-'
+    price = details.get('price') or '-'
     acceleration = details.get('acceleration') or '-'
 
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
 
-    return ''':mega: Found *{plate}*, it's a *{car_brand} {car_type}*! _(confidence {confidence:.2f})_
+    return ''':mega: Found *{plate}*, it's a *{car_brand} {model}*! _(confidence {confidence:.2f})_
      • Owner: {owner}
      • Price: {price} 
      • 0-100: {acceleration} sec
-     • APK expires: {apk}'''.format(plate=plate, confidence=confidence, car_type=car_type,
+     • APK expires: {apk}'''.format(plate=plate, confidence=confidence, model=model,
                                     owner=owner, car_brand=car_brand, price=price, acceleration=acceleration, apk=apk)
 
 

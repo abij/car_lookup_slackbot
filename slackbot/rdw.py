@@ -37,18 +37,18 @@ def prettify_brand(brand):
     return capitalize_words(brand.lower())
 
 
-def prettify_name(brand, name):
-    if name in special_name_mapping:
-        return special_name_mapping[name]
+def prettify_model(brand, model):
+    if model in special_name_mapping:
+        return special_name_mapping[model]
 
-    name = name.replace(brand, "").replace(brand.replace(" ", ""), "").strip()
+    model = model.replace(brand, "").replace(brand.replace(" ", ""), "").strip()
 
     # Its probably a code like: IX35 / DS3 / CX-5
-    if len(name) <= 6 and not name.isalpha():
-        return name
+    if len(model) <= 6 and not model.isalpha():
+        return model
 
     # default: uppercase first letter.
-    return capitalize_words(name.lower())
+    return capitalize_words(model.lower())
 
 
 class RdwOnlineClient:
@@ -57,18 +57,17 @@ class RdwOnlineClient:
     def __init__(self, app_token=None):
         self.client = Socrata('opendata.rdw.nl', app_token=app_token)
 
-    def get_rdw_details(self, kenteken):
-        kenteken = kenteken.strip().replace('-', '').upper()
-        assert len(kenteken) == 6, 'Length of the kenteken must be 6 (without any dashes).'
+    def get_rdw_details(self, plate):
+        plate = plate.strip().replace('-', '').upper()
+        assert len(plate) == 6, 'Length of the kenteken must be 6 (without any dashes).'
 
         # TODO Maybe use async and somekind of timeout
         res = self.client.get(
             self.GEKENTEKENDE_VOERTUIGEN_DATASET_ID, limit=1,
-            where='kenteken = "{}"'.format(kenteken),
-            select='kenteken, vervaldatum_apk, voertuigsoort, merk, '
-                   'handelsbenaming, catalogusprijs, zuinigheidslabel')
+            where='kenteken = "{}"'.format(plate),
+            select='kenteken, merk, handelsbenaming, catalogusprijs, vervaldatum_apk')
         if len(res) == 0:
-            log.info('RWD lookup not found. (%s)', kenteken)
+            log.info('RWD lookup not found. (%s)', plate)
             return None
 
         d = res[0].copy()  # details, first result only (copy, to reuse mocking the return value)
@@ -80,7 +79,11 @@ class RdwOnlineClient:
             d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%Y%m%d')
             d['vervaldatum_apk'] = d['dt_vervaldatum_apk'].strftime('%d-%m-%Y')
 
-        d['handelsbenaming'] = prettify_name(d['merk'], d['handelsbenaming'])
-        d['merk'] = prettify_brand(d['merk'])
-
-        return d
+        return {
+            'plate': d['kenteken'],
+            'brand': prettify_brand(d['merk']),
+            'model': prettify_model(d['merk'], d['handelsbenaming']),
+            'apk': d['vervaldatum_apk'],
+            'price': d['catalogusprijs'],
+            'acceleration': None
+        }
