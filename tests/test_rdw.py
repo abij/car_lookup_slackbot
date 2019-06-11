@@ -21,7 +21,7 @@ class TestRdwOnlineClient(TestCase):
     def test_invalid_too_long(self):
         with self.assertRaises(AssertionError) as e:
             self.rdw_client.get_rdw_details('tooLong')
-        assert str(e.exception) == 'Length of the kenteken must be 6 (without any dashes).'
+        assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes).'
 
     @mock.patch('sodapy.Socrata.get')
     def test_getting_success_response(self, mock_socrata_get):
