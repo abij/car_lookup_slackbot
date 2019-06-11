@@ -50,13 +50,15 @@ class FinnikOnlineClient:
             self.enable_service_timeout()
             return None
 
-        return {
+        result = {
             'brand': div_base.find('div', id='value-basis-gegevens-merk').text,
             'model': div_base.find('div', id='value-basis-gegevens-model').text,
             'apk': div_summary.find(id="value-apk").text,
             'price': self._get_price(div_summary),
             'acceleration': self._get_acceleration(div_summary, plate),
         }
+        log.info("Finnik lookup for %s result: %s", plate, result)
+        return result
 
     def _get_price(self, div_summary):
         costs_with_markup = div_summary.find(id="value-nieuwprijs")
@@ -76,7 +78,6 @@ class FinnikOnlineClient:
             return None
 
         acceleration = acceleration_item.text.replace("seconden", "").strip()
-        log.info("Acceleration lookup for %s from Finnik result: %s sec", plate, acceleration)
         return acceleration
 
     def enable_service_timeout(self):
