@@ -59,7 +59,7 @@ class RdwOnlineClient:
 
     def get_rdw_details(self, plate):
         plate = plate.strip().replace('-', '').upper()
-        assert len(plate) == 6, 'Length of the kenteken must be 6 (without any dashes).'
+        assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes).'
 
         # TODO Maybe use async and somekind of timeout
         res = self.client.get(
