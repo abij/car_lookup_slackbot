@@ -279,7 +279,7 @@ class Bot:
             if details:
                 # Do not overwrite existing values.
                 # So the RDW has preference over Finnik.
-                missing_values = {k: v for k, v in details if v and not result.get(k)}
+                missing_values = {k: v for k, v in details if v and result.get(k) is not None}
                 result.update(missing_values)
         except Exception as e:
             log.warning('Failed to fetch acceleration from Finnik: %s', str(e))

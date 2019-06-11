@@ -61,7 +61,7 @@ def lookup_found_with_details(plate, details):
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
 
-    return '''`/car {plate}` lookup: *{car_brand} {model}*
+    return '''`/car {plate}` lookup: <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>  
      • Owner: {owner}
      • Price: {price} 
      • 0-100: {acceleration} sec
@@ -84,7 +84,7 @@ def comment_found_with_details(plate, confidence, details):
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
 
-    return ''':mega: Found *{plate}*, it's a *{car_brand} {model}*! _(confidence {confidence:.2f})_
+    return ''':mega: Found *{plate}*, it's a <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>  ! _(confidence {confidence:.2f})_
      • Owner: {owner}
      • Price: {price} 
      • 0-100: {acceleration} sec
