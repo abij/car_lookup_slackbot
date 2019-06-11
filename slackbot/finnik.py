@@ -71,7 +71,7 @@ class FinnikOnlineClient:
             return None
 
         acceleration = acceleration_item.text.replace("seconden", "").strip()
-        log.info("Acceleration lookup for %s from Finnik result: {} sec", plate, acceleration)
+        log.info("Acceleration lookup for %s from Finnik result: %s sec", plate, acceleration)
         return acceleration
 
     def enable_service_timeout(self):
