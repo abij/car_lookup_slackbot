@@ -67,7 +67,10 @@ class FinnikOnlineClient:
                         "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
             self.enable_service_timeout()
             return None
-        return int("".join(re.findall(r'\d+', costs_with_markup.text)))
+        try:
+            return int("".join(re.findall(r'\d+', costs_with_markup.text)))
+        except ValueError:
+            return None
 
     def _get_acceleration(self, div_summary, plate):
         acceleration_item = div_summary.find(id="value-acceleratie")

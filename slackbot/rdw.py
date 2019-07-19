@@ -72,8 +72,7 @@ class RdwOnlineClient:
 
         d = res[0].copy()  # details, first result only (copy, to reuse mocking the return value)
 
-        if 'catalogusprijs' in d:
-            d['catalogusprijs'] = int(d['catalogusprijs'])
+        d['catalogusprijs'] = int(d.get('catalogusprijs', 0)) or None
 
         if 'vervaldatum_apk' in d:
             d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%Y%m%d')
