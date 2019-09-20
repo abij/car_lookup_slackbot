@@ -60,9 +60,10 @@ steps:
       imageName: $(image.name)
 
   - task: AzureCLI@1
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    condition: false
+#    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Restart car-lookup container group
     inputs:
-      azureSubscription: azure-car-lookup-rg
+#      connectedServiceNameARM: azure-car-lookup-rg  In Azure we need a SP which is allowed to restart the container.ß
       scriptLocation: inlineScript
       inlineScript: az container restart -g car-lookup-rg -n car-lookup-slackbot-api -o table
