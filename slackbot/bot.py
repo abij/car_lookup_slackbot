@@ -48,6 +48,7 @@ def is_file_not_found(res):
 
 class Bot:
     """ Instantiates a Bot object to handle Slack events."""
+
     def __init__(self):
         super(Bot)
         self.name = "Car_info_bot"
@@ -92,18 +93,18 @@ class Bot:
         # Slack returns a temporary authorization code that we'll exchange for
         # an OAuth token using the oauth.access endpoint
         auth_response = self.slack.api_call(
-                                "oauth.access",
-                                client_id=self.oauth["client_id"],
-                                client_secret=self.oauth["client_secret"],
-                                code=code
-                                )
+            "oauth.access",
+            client_id=self.oauth["client_id"],
+            client_secret=self.oauth["client_secret"],
+            code=code
+        )
         # To keep track of authorized teams and their associated OAuth tokens,
         # we will save the team ID and bot tokens to the global
         # authed_teams object
         team_id = auth_response["team_id"]
         log.info('Authorized team_id: %s', team_id)
         authed_teams[team_id] = {"bot_token":
-                                 auth_response["bot"]["bot_access_token"]}
+                                     auth_response["bot"]["bot_access_token"]}
         # Then we'll reconnect to the Slack Client with the correct team's
         # bot token
 
@@ -161,7 +162,8 @@ class Bot:
                 elif match_in_quotes:
                     owner = match_in_quotes.group(1)
                     if len(owner) < owner_min_chars or len(owner) > owner_max_chars or not self._is_valid_owner(owner):
-                        return messages.command_invalid_owner(owner, min_chars=owner_min_chars, max_chars=owner_max_chars)
+                        return messages.command_invalid_owner(owner, min_chars=owner_min_chars,
+                                                              max_chars=owner_max_chars)
                     self.car_owners.tag(plate, name=owner)
                     return messages.command_tag_added(plate, owner=owner)
                 else:
@@ -198,10 +200,11 @@ class Bot:
         file_obj = file_info_res["file"]
         file_name = file_obj["name"]
         file_type = file_obj["pretty_type"]
-        channels = file_obj["channels"]
         url_private_download = file_obj["url_private_download"]
 
         valid_file_types = ['png', 'jpg', 'jpeg']
+
+        channel_ts_tuple = self._extract_ts_from_channel(file_obj)
 
         if not file_type.lower() in valid_file_types:
             log.info('Skipping: Not a valid file_type: %s (%s)', file_type, valid_file_types)
@@ -213,8 +216,8 @@ class Bot:
                 return
             else:
                 seen_files.insert(0, file_id)  # insert in beginning,
-                while len(seen_files) >= 50:   # prevent endless growing list.
-                    seen_files.pop()           # remove at the end
+                while len(seen_files) >= 50:  # prevent endless growing list.
+                    seen_files.pop()  # remove at the end
 
         image_name = url_private_download.split('/')[-1]
 
@@ -240,7 +243,7 @@ class Bot:
                     log.info('Valid pattern: %s or Confidence %s lower then threshold (%s).',
                              valid, confidence, threshold)
                     msg = messages.comment_found_but_skipping(plate, confidence, threshold, valid)
-                    self.post_chat_message(channels, file_id, msg, log_descr="Low confidence/Invalid pattern")
+                    self.post_chat_message(channel_ts_tuple, file_id, msg, log_descr="Low confidence/Invalid pattern")
                     continue
 
                 details = self.get_licence_plate_details(plate)
@@ -248,10 +251,11 @@ class Bot:
                     msg = messages.comment_found_with_details(plate, confidence, details)
                 else:
                     msg = messages.comment_found_no_details(plate, confidence)
-                self.post_chat_message(channels, file_id, msg, log_descr="car found")
+                self.post_chat_message(channel_ts_tuple, file_id, msg, log_descr="car found")
 
             if idx == -1:
-                self.post_chat_message(channels, file_id, messages.comment_no_plate_found, log_descr="No plates found")
+                self.post_chat_message(channel_ts_tuple, file_id, messages.comment_no_plate_found,
+                                       log_descr="No plates found")
 
     def get_licence_plate_details(self, plate):
         result = {}
@@ -288,17 +292,17 @@ class Bot:
             return None
         return result
 
-    def post_chat_message(self, channels, file_id, msg, log_descr=None):
-        # Comments have changed: https://api.slack.com/changelog/2018-05-file-threads-soon-tread
-        # So lets post a message instead of commenting on the file...
+    def post_chat_message(self, channels_ts_tuples, file_id, msg, log_descr=None):
         # requires: chat:write:bot
-        for idx, channel_id in enumerate(channels):
-            r = self.slack.api_call('chat.postMessage', channel=channel_id, text=msg)
+        for idx, channels_ts_tuples in enumerate(channels_ts_tuples):
+            channel, ts = channels_ts_tuples
+
+            r = self.slack.api_call('chat.postMessage', channel=channel, thread_ts=ts, text=msg)
             result = 'success'
             if not r['ok']:
                 result = r['error']
             log.info('Shared (%s/%s) channels): Posted message "%s" in channel_id: %s, about file_id: %s. Result: %s',
-                     idx + 1, len(channels), log_descr, channel_id, file_id, result)
+                     idx + 1, len(channels_ts_tuples), log_descr, channel, file_id, result)
 
     def is_valid_token(self, token):
         if self.verification:
@@ -309,3 +313,20 @@ class Bot:
     @staticmethod
     def _is_valid_owner(owner):
         return re.match(r"^[a-zA-Z]+(([',. -]{0,2}[a-zA-Z ])?[a-zA-Z.!?]*)*$", owner) is not None
+
+    @staticmethod
+    def _extract_ts_from_channel(json_input):
+        channels = json_input["channels"]
+
+        def extract_ts_for_channel(channel):
+            shares = json_input["shares"]["public"][channel]
+
+            # we're only interested in the message in #cars
+            cars_share_ts = [share_info["ts"] for share_info in shares if share_info["channel_name"] == 'cars']
+
+            if len(cars_share_ts) == 1:
+                return channel, cars_share_ts[0]
+            else:
+                return channel, None
+
+        return list(map(extract_ts_for_channel, channels))

@@ -3,6 +3,8 @@ from unittest import mock, TestCase
 from slackbot.bot import Bot
 from slackbot import messages
 
+import json
+
 
 class TestBot(TestCase):
 
@@ -30,7 +32,7 @@ class TestBot(TestCase):
         bot = Bot()
         bot.car_owners = mock_car_owners
         bot.rdw_client = mock_rdw_client
-        bot.finnik_client= mock_finnik
+        bot.finnik_client = mock_finnik
 
         r = bot.command_car('@user1', '12-AAA-4')
         mock_car_owners.lookup.assert_called_with('12AAA4')
@@ -106,3 +108,82 @@ class TestBot(TestCase):
     def test_is_valid_owner(self):
         assert Bot._is_valid_owner("Owner of Who's") == True
         assert Bot._is_valid_owner("Some name with 'qoute") == True
+
+    def test_extract_ts_from_channel(self):
+        input_data = """
+        {
+            "shares": {
+                "public": {
+                    "C0T8SE4AU": [
+                        {
+                            "reply_users": [
+                                "U061F7AUR"
+                            ],
+                            "reply_users_count": 1,
+                            "reply_count": 1,
+                            "ts": "1531763348.000001",
+                            "thread_ts": "1531763273.000015",
+                            "latest_reply": "1531763348.000001",
+                            "channel_name": "cars",
+                            "team_id": "T061EG9R6"
+                        }
+                    ]
+                }
+            },
+            "channels": [
+                "C0T8SE4AU"
+            ],
+            "groups": [],
+            "ims": [],
+            "has_rich_preview": false
+        }
+        """
+        json_input_data = json.loads(input_data)
+        assert Bot._extract_ts_from_channel(json_input_data) == [('C0T8SE4AU', '1531763348.000001')]
+
+    def test_extract_ts_from_channel_multiple(self):
+        input_data = """
+        {
+            "shares": {
+                "public": {
+                    "C0T8SE4AU": [
+                        {
+                            "reply_users": [
+                                "U061F7AUR"
+                            ],
+                            "reply_users_count": 1,
+                            "reply_count": 1,
+                            "ts": "1531763348.000001",
+                            "thread_ts": "1531763273.000015",
+                            "latest_reply": "1531763348.000001",
+                            "channel_name": "cars",
+                            "team_id": "T061EG9R6"
+                        }
+                    ],
+                    "CAAAAA111": [
+                        {
+                            "reply_users": [
+                                "U061F7AUR"
+                            ],
+                            "reply_users_count": 1,
+                            "reply_count": 1,
+                            "ts": "1111111.11111111",
+                            "thread_ts": "1531763273.000015",
+                            "latest_reply": "1531763348.000001",
+                            "channel_name": "cars",
+                            "team_id": "T061EG9R6"
+                        }
+                    ]
+                }
+            },
+            "channels": [
+                "C0T8SE4AU", "CAAAAA111"
+            ],
+            "groups": [],
+            "ims": [],
+            "has_rich_preview": false
+        }
+        """
+        json_input_data = json.loads(input_data)
+        assert Bot._extract_ts_from_channel(json_input_data) == [('C0T8SE4AU', '1531763348.000001'),
+                                                                 ('CAAAAA111', '1111111.11111111')]
