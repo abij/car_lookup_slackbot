@@ -322,7 +322,7 @@ class Bot:
             shares = json_input["shares"]["public"][channel]
 
             # we're only interested in the message in #cars
-            cars_share_ts = [share_info["ts"] for share_info in shares if share_info["channel_name"] == 'cars']
+            cars_share_ts = [share_info["ts"] for share_info in shares]
 
             if len(cars_share_ts) == 1:
                 return channel, cars_share_ts[0]
