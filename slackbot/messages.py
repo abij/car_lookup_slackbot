@@ -56,10 +56,13 @@ def lookup_found_with_details(plate, details):
     owner = _get_owner_from_details(details) or '- _(`/car tag` to add owner)_'
     apk = details.get('apk') or '-'
     price = details.get('price') or '-'
+    bpm = details.get('bpm') or '-'
     acceleration = details.get('acceleration') or '-'
 
     if isinstance(price, int):
         price = '€ {:,d}'.format(price).replace(',', '.')
+        if isinstance(bpm, int):
+            price += " (€ {:,d} BPM)".format(bpm).replace(',', '.')
 
     return '''`/car {plate}` lookup: <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>  
      • Owner: {owner}

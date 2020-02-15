@@ -5,6 +5,7 @@ __pycache__
 .coverage
 coverage.xml
 htmlcov/
+*.egg-info/
 
 .metadata
 bin/
@@ -60,3 +61,9 @@ az-deploy-params*.json
 *.log
 
 *.sublime-workspace
+
+# IntelliJ
+.idea/
+
+# Virtualenv
+venv/
