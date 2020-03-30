@@ -43,6 +43,7 @@ class FinnikOnlineClient:
         soup = BeautifulSoup(res.content, "html.parser")
         div_base = soup.find('div', id="base")
         div_summary = soup.find("div", id="summary-new")
+        div_value = soup.find("div", id="value")
 
         if not div_base or not div_summary:
             log.warning("Successful response, but element div with id='base' or id='summary-new') not found! "
@@ -55,6 +56,7 @@ class FinnikOnlineClient:
             'model': div_base.find('div', id='value-basis-gegevens-model').text,
             'apk': div_summary.find(id="value-apk").text,
             'price': self._get_price(div_summary),
+            'bpm': self._get_bpm(div_value),
             'acceleration': self._get_acceleration(div_summary, plate),
         }
         log.info("Finnik lookup for %s result: %s", plate, result)
@@ -64,6 +66,18 @@ class FinnikOnlineClient:
         costs_with_markup = div_summary.find(id="value-nieuwprijs")
         if not costs_with_markup:
             log.warning("Successful response, but element (id='value-nieuwprijs') not found! "
+                        "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
+            self.enable_service_timeout()
+            return None
+        try:
+            return int("".join(re.findall(r'\d+', costs_with_markup.text)))
+        except ValueError:
+            return None
+
+    def _get_bpm(self, div_value):
+        costs_with_markup = div_value.find(id="value-waarde-informatie-bpm")
+        if not costs_with_markup:
+            log.warning("Successful response, but element (id='value-waarde-informatie-bpm') not found! "
                         "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
             self.enable_service_timeout()
             return None

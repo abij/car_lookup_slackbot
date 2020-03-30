@@ -9,6 +9,7 @@ SOCRATA_RES_DATA = {
     'catalogusprijs': '12345',
     #'vervaldatum_apk': '01/10/2019', update from opendata.rdw.nl on mid Februari
     'vervaldatum_apk': '20191001',
+    'bruto_bpm': '2345',
 }
 
 
@@ -32,6 +33,7 @@ class TestRdwOnlineClient(TestCase):
                     'model': '1-Serie',
                     'price': 12345,
                     'apk': '01-10-2019',
+                    'bpm': 2345,
                     'acceleration': None
                     }
 

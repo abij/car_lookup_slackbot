@@ -14,6 +14,9 @@ FINNIK_RES_DATA = """
         <li id="value-apk">14-02-2023</li>
         <li id="value-nieuwprijs">€ 1.123.456,-</li>
     </div>
+    <div id="value">
+        <li id="value-waarde-informatie-bpm">€ 123.456,-</li>
+    </div>
 </body>
 </html>"""
 
@@ -64,7 +67,8 @@ class TestFinnikOnlineClient(TestCase):
             'model': "3-Serie",
             'apk': "14-02-2023",
             'price': 1123456,
-            'acceleration': "5,6"
+            'acceleration': "5,6",
+            'bpm': 123456
         }
     @mock.patch('requests.get')
     def test_not_found(self, mock_requests):

@@ -65,7 +65,8 @@ class RdwOnlineClient:
         res = self.client.get(
             self.GEKENTEKENDE_VOERTUIGEN_DATASET_ID, limit=1,
             where='kenteken = "{}"'.format(plate),
-            select='kenteken, merk, handelsbenaming, catalogusprijs, vervaldatum_apk')
+            select='kenteken, merk, handelsbenaming, catalogusprijs, bruto_bpm, vervaldatum_apk')
+        log.info("RDW lookup for %s result: %s", plate, res)
         if len(res) == 0:
             log.info('RWD lookup not found. (%s)', plate)
             return None
@@ -73,6 +74,7 @@ class RdwOnlineClient:
         d = res[0].copy()  # details, first result only (copy, to reuse mocking the return value)
 
         d['catalogusprijs'] = int(d.get('catalogusprijs', 0)) or None
+        d['bruto_bpm'] = int(d.get('bruto_bpm', 0)) or None
 
         if 'vervaldatum_apk' in d:
             d['dt_vervaldatum_apk'] = dt.datetime.strptime(d['vervaldatum_apk'], '%Y%m%d')
@@ -84,5 +86,6 @@ class RdwOnlineClient:
             'model': prettify_model(d['merk'], d['handelsbenaming']),
             'apk': d['vervaldatum_apk'],
             'price': d['catalogusprijs'],
+            'bpm': d['bruto_bpm'],
             'acceleration': None
         }
