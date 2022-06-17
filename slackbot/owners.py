@@ -28,8 +28,12 @@ class CarOwners:
             self.owners_df.loc[plate, 'slackid'] = slackid or ''
             self.owners_df.loc[plate, 'name'] = name or ''
         else:
-            new_data = pd.Series({'slackid': slackid, 'name': name}, name=plate)
-            self.owners_df = self.owners_df.append(new_data)
+            new_data = pd.DataFrame(data={
+                'slackid': [slackid],
+                'name': [name],
+                'kenteken': [plate]}
+            ).set_index('kenteken')
+            self.owners_df = pd.concat([self.owners_df, new_data])
             self.owners_df = self.owners_df.where((pd.notnull(self.owners_df)), None)
         self.save()
 
