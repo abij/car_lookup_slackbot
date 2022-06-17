@@ -16,6 +16,20 @@ SERVICE_FAILURE_MAX_TIMEOUT_SEC = 1800  # 30 minutes
 log = logging.getLogger(__name__)
 
 
+def _get_label_text(row):
+    text = row.find_next("div", {"class": "label"}).text
+    if text:
+        return text.strip()
+    return ""
+
+
+def _get_value_text(row):
+    text = row.find_next("div", {"class": "value"}).text
+    if text:
+        return text.strip()
+    return ""
+
+
 class FinnikOnlineClient:
     last_failure = None
     service_failure_timeout = DEFAULT_SERVICE_FAILURE_TIMEOUT_SEC
@@ -41,61 +55,59 @@ class FinnikOnlineClient:
         self.disable_service_timeout()
 
         soup = BeautifulSoup(res.content, "html.parser")
-        div_base = soup.find('div', id="base")
-        div_summary = soup.find("div", id="summary-new")
-        div_value = soup.find("div", id="value")
 
-        if not div_base or not div_summary:
-            log.warning("Successful response, but element div with id='base' or id='summary-new') not found! "
+        section_basic_info = soup.find('section', {"data-sectiontype": "BasicInformation"})
+        section_quickcheck = soup.find('section', {"class": "quickcheck"})
+        section_value_info = soup.find('section', {"data-sectiontype": "ValueInformation"})
+
+        if not section_basic_info or not section_quickcheck or not section_value_info:
+            log.warning("Successful response, but not all sections (BasicInformation, quickcheck, ValueInformation) not found! "
                         "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
             self.enable_service_timeout()
             return None
 
+        brand = section_basic_info.find_all("div", {"class": "value"})[0].text
+        if brand:
+            brand = brand.strip()
+
+        model = section_basic_info.find_all("div", {"class": "value"})[1].text
+        if model:
+            model = model.strip()
+
+        acceleration = None
+        div_speed = section_quickcheck.find_all("div", {"class": "speed"})[0]
+        if "0-100" in div_speed.text:
+            acceleration_text = div_speed.find("span").text
+            acceleration = acceleration_text.split()[0].replace(",",".")
+
+        apk = None
+        div_apk = section_quickcheck.find_next("div", {"class": "garage"})
+        if "APK" in div_apk.text:
+            apk = div_apk.find("span").text.strip()
+
+        rows = section_value_info.find_all("div", {"class": "row"})
+
+        price = None
+        price_raw = [_get_value_text(r) for r in rows if 'nieuwprijs' in _get_label_text(r).lower()]
+        if price_raw:
+            price = int(re.sub(r"\D", '', price_raw[0]))
+
+        bpm = None
+        bpm_raw = [_get_value_text(r) for r in rows if 'bpm' in _get_label_text(r).lower()]
+        if bpm_raw and "onbekend" not in bpm_raw[0].lower():
+            bpm = int(re.sub(r"\D", '', bpm_raw[0]))
+
         result = {
-            'brand': div_base.find('div', id='value-basis-gegevens-merk').text,
-            'model': div_base.find('div', id='value-basis-gegevens-model').text,
-            'apk': div_summary.find(id="value-apk").text,
-            'price': self._get_price(div_summary),
-            'bpm': self._get_bpm(div_value),
-            'acceleration': self._get_acceleration(div_summary, plate),
+            'brand': brand,
+            'model': model,
+            'apk': apk,
+            'price': price,
+            'bpm': bpm,
+            'acceleration': acceleration,
         }
         log.info("Finnik lookup for %s result: %s", plate, result)
         return result
 
-    def _get_price(self, div_summary):
-        costs_with_markup = div_summary.find(id="value-nieuwprijs")
-        if not costs_with_markup:
-            log.warning("Successful response, but element (id='value-nieuwprijs') not found! "
-                        "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
-            self.enable_service_timeout()
-            return None
-        try:
-            return int("".join(re.findall(r'\d+', costs_with_markup.text)))
-        except ValueError:
-            return None
-
-    def _get_bpm(self, div_value):
-        costs_with_markup = div_value.find(id="value-waarde-informatie-bpm")
-        if not costs_with_markup:
-            log.warning("Successful response, but element (id='value-waarde-informatie-bpm') not found! "
-                        "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
-            self.enable_service_timeout()
-            return None
-        try:
-            return int("".join(re.findall(r'\d+', costs_with_markup.text)))
-        except ValueError:
-            return None
-
-    def _get_acceleration(self, div_summary, plate):
-        acceleration_item = div_summary.find(id="value-acceleratie")
-        if not acceleration_item:
-            log.warning("Successful response, but element (id='value-acceleratie') not found! "
-                        "Is the site changed? Disable service for %s sec.", self.service_failure_timeout)
-            self.enable_service_timeout()
-            return None
-
-        acceleration = acceleration_item.text.replace("seconden", "").strip()
-        return acceleration
 
     def enable_service_timeout(self):
         if self.last_failure is not None:
