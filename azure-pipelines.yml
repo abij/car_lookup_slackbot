@@ -12,7 +12,7 @@ steps:
   - script: python -m pip install --upgrade pip setuptools wheel
     displayName: 'Install tools'
 
-  - script: pip install -r requirements.txt && pip install .
+  - script: pip install .[dev]
     displayName: 'Install requirements.txt and this package'
 
   - script: 'pylint -E slackbot/*.py'
