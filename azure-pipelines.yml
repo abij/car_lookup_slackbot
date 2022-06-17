@@ -1,3 +1,9 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
 variables:
   project.name: 'car-lookup'
   image.name: bija/car_lookup
@@ -50,7 +56,7 @@ steps:
       imageName: $(image.name)
       includeLatestTag: true
 
-#  TODO: run the container to see if it actually starts up...
+  #  TODO: run the container to see if it actually starts up...
 
   - task: Docker@1
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -61,9 +67,9 @@ steps:
 
   - task: AzureCLI@1
     condition: false
-#    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    #    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Restart car-lookup container group
     inputs:
-#      connectedServiceNameARM: azure-car-lookup-rg  In Azure we need a SP which is allowed to restart the container.ß
+      #      connectedServiceNameARM: azure-car-lookup-rg  In Azure we need a SP which is allowed to restart the container.ß
       scriptLocation: inlineScript
       inlineScript: az container restart -g car-lookup-rg -n car-lookup-slackbot-api -o table
