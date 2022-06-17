@@ -5,7 +5,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='slackbot',
-    version='1.0',
+    version='1.1',
     description='Car Lookup - Slackbot',
     author='Alexander Bij',
     author_email='AlexanderBij@GoDataDriven.com',
