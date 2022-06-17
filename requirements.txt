@@ -1,6 +1,7 @@
 # All dependencies, also for development
 
 Flask>=1.0.2
+flask-ipban
 slackeventsapi
 tornado>=4.5
 slackclient==1.3.0
@@ -9,8 +10,3 @@ beautifulsoup4
 sodapy
 pandas
 tenacity
-
-# Test and validate
-pytest
-pytest-cov
-pylint
