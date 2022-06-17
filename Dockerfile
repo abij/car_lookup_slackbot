@@ -1,13 +1,12 @@
-FROM bija/openalpr
+FROM openalpr/openalpr
+#FROM bija/openalpr
+# TODO: Update bija/openalpr with new Ubuntu AND correct OpenCV.
 
-RUN apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && \
+RUN apt-get update && \
     rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
     PS1="\\u@carlookup:\\w$ " >> /root/.bashrc && \
-    apt-get install -y python3.9 && \
-    curl https://bootstrap.pypa.io/get-pip.py | python3.9
+    apt install -y python3 python3-pip
 
 # Prevent reinstalling
 COPY requirements.txt /app/requirements.txt
