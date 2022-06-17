@@ -37,15 +37,17 @@ class OpenAlprLicenceplaceExtractor(LicenceplaceExtractor):
             log.error('Cannot find file: %s', file_name)
             return []
 
-        if output.startswith('{'):
-            lookup = json.loads(output)
-            if not lookup['results']:  # empty array, nothing found...
-                log.info('No plate found in image: %s', file_name)
-                return []
-
-            for match in lookup['results']:
-                yield {'confidence': match['confidence'],
-                       'plate': match['plate'],
-                       'valid_nl_pattern': match['matches_template'] == 1}
-        else:
+        if not output.startswith('{'):
             raise ValueError("Unable to parse result from 'alpr' command: " + output)
+
+        lookup = json.loads(output)
+
+        if not lookup['results']:  # empty array, nothing found...
+            log.info('No plate found in image: %s', file_name)
+            return []
+
+        for match in lookup['results']:
+            yield {'confidence': match['confidence'],
+                   'plate': match['plate'],
+                   'valid_nl_pattern': match['matches_template'] == 1}
+
