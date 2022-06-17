@@ -19,7 +19,7 @@ steps:
     displayName: 'Install tools'
 
   - script: pip install .[dev]
-    displayName: 'Install requirements.txt and this package'
+    displayName: 'Install package'
 
   - script: 'pylint -E slackbot/*.py'
     displayName: Perform linting using pylint
