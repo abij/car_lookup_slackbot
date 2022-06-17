@@ -1,7 +1,7 @@
 variables:
   project.name: 'car-lookup'
   image.name: bija/car_lookup
-  python.version: 3.6
+  python.version: 3.9
 
 steps:
   - task: UsePythonVersion@0
