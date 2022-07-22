@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, make_response, render_template
 from flask_ipban import IpBan
 from slackeventsapi import SlackEventAdapter
+import asyncio
 
 from slackbot import bot
 
@@ -106,7 +107,9 @@ def testing():
         file_path = os.path.join('/data', params.get('file'))
         result = list(pyBot.licenceplateExtractor.find_licenceplates(file_path))
     elif 'kenteken' in params.keys():
-        result = pyBot.get_licence_plate_details(params.get('kenteken'))
+        result = asyncio.run(
+            pyBot.get_licence_plate_details(params.get('kenteken'))
+        )
     else:
         return make_response('Usage examples: </br>'
                              '<a href="/test?file=IMG_3423.JPG">/test?file=IMG_3423.JPG</a></br>'

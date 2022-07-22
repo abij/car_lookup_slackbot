@@ -19,17 +19,17 @@ class TestCarOwners(TestCase):
     def tearDownClass(cls):
         os.remove(TEST_CSV)
 
-    def test_lookup_success(self):
-        result = self.car_owners.lookup('AA123Z')
+    async def test_lookup_success(self):
+        result = await self.car_owners.lookup('AA123Z')
         assert result == {'slackid': 'U12345', 'name': 'John Do'}
 
-    def test_lookup_invalid(self):
+    async def test_lookup_invalid(self):
         with self.assertRaises(AssertionError) as e:
-            self.car_owners.lookup('TOO-LONG')
+            await self.car_owners.lookup('TOO-LONG')
         assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes)'
 
-    def test_lookup_not_found(self):
-        result = self.car_owners.lookup('BB123B')
+    async def test_lookup_not_found(self):
+        result = await self.car_owners.lookup('BB123B')
         self.assertIsNone(result)
 
     def test_tag_invalid_licence_plate(self):
@@ -37,12 +37,12 @@ class TestCarOwners(TestCase):
             self.car_owners.tag('U123456', 'TOOLONG')
         assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes)'
 
-    def test_tag_and_untag(self):
+    async def test_tag_and_untag(self):
         new_plate = 'CC333C'
         self.car_owners.tag(new_plate, slackid='U123456')
 
         # New entry should be found, and persisted:
-        assert self.car_owners.lookup(new_plate) == {'slackid': 'U123456', 'name': None}
+        assert await self.car_owners.lookup(new_plate) == {'slackid': 'U123456', 'name': None}
 
         with open(TEST_CSV) as f:
             data = f.readlines()
@@ -57,7 +57,7 @@ class TestCarOwners(TestCase):
         # should not be there anymore (lookup + data-file)
         nr_rows_after_untag = sum(1 for _ in open(TEST_CSV))
         assert nr_rows_after_untag == (nr_rows - 1)
-        self.assertIsNone(self.car_owners.lookup(new_plate))
+        self.assertIsNone(await self.car_owners.lookup(new_plate))
 
         # Should not crash if it does not exists
         self.car_owners.untag('U123456', new_plate)

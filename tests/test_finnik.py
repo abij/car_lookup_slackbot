@@ -3111,15 +3111,15 @@ class TestFinnikOnlineClient(TestCase):
     def setUpClass(cls):
         cls.finnik_client = FinnikOnlineClient()
 
-    def test_invalid_too_long(self):
+    async def test_invalid_too_long(self):
         with self.assertRaises(AssertionError) as e:
-            self.finnik_client.get_car_details('tooLong')
+            await self.finnik_client.get_car_details('tooLong')
             assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes).'
 
     @mock.patch('requests.get')
-    def test_getting_success_response(self, mock_requests):
+    async def test_getting_success_response(self, mock_requests):
         mock_requests.return_value = self._mock_response(content=FINNIK_RES_DATA)
-        assert self.finnik_client.get_car_details('ab123z') == {
+        assert await self.finnik_client.get_car_details('ab123z') == {
             'brand': "BMW",
             'model': "i3",
             'apk': "31-12-2023",
@@ -3128,7 +3128,7 @@ class TestFinnikOnlineClient(TestCase):
             'bpm': 123456
         }
     @mock.patch('requests.get')
-    def test_not_found(self, mock_requests):
+    async def test_not_found(self, mock_requests):
         mock_requests.return_value = self._mock_response()
-        details = self.finnik_client.get_car_details('ab123z')
+        details = await self.finnik_client.get_car_details('ab123z')
         self.assertIsNone(details)

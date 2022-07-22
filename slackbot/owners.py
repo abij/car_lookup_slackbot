@@ -43,7 +43,7 @@ class CarOwners:
             self.owners_df.drop([plate], inplace=True)
             self.save()
 
-    def lookup(self, plate):
+    async def lookup(self, plate):
         """
         :return: Dict with 'name' and 'slackid' or None is not found
         """

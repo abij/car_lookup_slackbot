@@ -19,13 +19,13 @@ class TestRdwOnlineClient(TestCase):
     def setUpClass(cls):
         cls.rdw_client = RdwOnlineClient()
 
-    def test_invalid_too_long(self):
+    async def test_invalid_too_long(self):
         with self.assertRaises(AssertionError) as e:
-            self.rdw_client.get_rdw_details('tooLong')
+            await self.rdw_client.get_rdw_details('tooLong')
         assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes).'
 
     @mock.patch('sodapy.Socrata.get')
-    def test_getting_success_response(self, mock_socrata_get):
+    async def test_getting_success_response(self, mock_socrata_get):
         mock_socrata_get.return_value = [SOCRATA_RES_DATA]
 
         expected = {'plate': 'AB123ZZ',
@@ -37,14 +37,14 @@ class TestRdwOnlineClient(TestCase):
                     'acceleration': None
                     }
 
-        assert self.rdw_client.get_rdw_details('ab123z') == expected
-        assert self.rdw_client.get_rdw_details('AB123Z') == expected
-        assert self.rdw_client.get_rdw_details('AB-123-Z') == expected
+        assert await self.rdw_client.get_rdw_details('ab123z') == expected
+        assert await self.rdw_client.get_rdw_details('AB123Z') == expected
+        assert await self.rdw_client.get_rdw_details('AB-123-Z') == expected
 
     @mock.patch('sodapy.Socrata.get')
-    def test_not_found(self, mock_socrata_get):
+    async def test_not_found(self, mock_socrata_get):
         mock_socrata_get.return_value = []
-        details = self.rdw_client.get_rdw_details('ab123z')
+        details = await self.rdw_client.get_rdw_details('ab123z')
         self.assertIsNone(details)
 
     def test_prettify_brand(self):

@@ -4,11 +4,13 @@ import requests
 import logging
 import hmac
 import re
+from typing import Optional
 
 from threading import Lock
 
 from slackclient import SlackClient
 import tenacity
+import asyncio
 
 from slackbot.rdw import RdwOnlineClient
 from slackbot.finnik import FinnikOnlineClient
@@ -125,7 +127,8 @@ class Bot:
             plate = licence_plate.normalize(first_cmd)
             if not licence_plate.is_valid(plate):
                 return messages.command_invalid_licence_plate(first_cmd)
-            details = self.get_licence_plate_details(plate)
+
+            details = asyncio.run(self.get_licence_plate_details(plate))
             if not details:
                 return messages.lookup_no_details_found(plate)
             return messages.lookup_found_with_details(plate, details)
@@ -246,7 +249,7 @@ class Bot:
                     self.post_chat_message(channel_ts_tuple, file_id, msg, log_descr="Low confidence/Invalid pattern")
                     continue
 
-                details = self.get_licence_plate_details(plate)
+                details = asyncio.run(self.get_licence_plate_details(plate))
                 if details:
                     msg = messages.comment_found_with_details(plate, confidence, details)
                 else:
@@ -257,39 +260,48 @@ class Bot:
                 self.post_chat_message(channel_ts_tuple, file_id, messages.comment_no_plate_found,
                                        log_descr="No plates found")
 
-    def get_licence_plate_details(self, plate):
+    async def get_licence_plate_details(self, plate) -> Optional[dict]:
+        """
+        :param timeout: Shared timeout for lookups concurrently.
+        """
         result = {}
 
         plate = licence_plate.normalize(plate)
-        # TODO: Async 3 services at the same time.
+
+        # Start lookups concurrently:
+        t1 = asyncio.create_task(self.car_owners.lookup(plate))
+        t2 = asyncio.create_task(self.rdw_client.get_rdw_details(plate))
+        t3 = asyncio.create_task(self.finnik_client.get_car_details(plate))
+
         try:
-            owner_lookup = self.car_owners.lookup(plate)
+            owner_lookup = await asyncio.wait_for(t1, timeout=1.0)
             if owner_lookup:
                 result.update({
                     'owner_slackid': owner_lookup['slackid'],
                     'owner_name': owner_lookup['name']})
         except Exception as e:
-            log.warning('Failed to car_owner: %s', str(e))
+            log.warning('Failed to fetch car-owner: %s', str(e) or type(e).__name__)
 
         try:
-            details = self.rdw_client.get_rdw_details(plate)
-            if details:
-                result.update(details)
+            rdw_details = await asyncio.wait_for(t2, timeout=1.0)
+            if rdw_details:
+                result.update(rdw_details)
         except Exception as e:
-            log.warning('Failed to fetch RDW-details: %s', str(e))
+            log.warning('Failed to fetch RDW-details: %s', str(e) or type(e).__name__)
 
         try:
-            details = self.finnik_client.get_car_details(plate)
-            if details:
+            finnik_details = await asyncio.wait_for(t3, timeout=1.0)
+            if finnik_details:
                 # Do not overwrite existing values.
                 # So the RDW has preference over Finnik.
-                missing_values = {k: v for k, v in details.items() if v and result.get(k) is None}
+                missing_values = {k: v for k, v in finnik_details.items() if v and result.get(k) is None}
                 result.update(missing_values)
         except Exception as e:
-            log.warning('Failed to fetch acceleration from Finnik: %s', str(e))
+            log.warning('Failed to fetch acceleration from Finnik: %s', str(e) or type(e).__name__)
 
         if len(result.keys()) == 0:
             return None
+
         return result
 
     def post_chat_message(self, channels_ts_tuples, file_id, msg, log_descr=None):

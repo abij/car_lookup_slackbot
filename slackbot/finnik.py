@@ -34,7 +34,7 @@ class FinnikOnlineClient:
     last_failure = None
     service_failure_timeout = DEFAULT_SERVICE_FAILURE_TIMEOUT_SEC
 
-    def get_car_details(self, plate):
+    async def get_car_details(self, plate):
         plate = licence_plate.normalize(plate)
         assert len(plate) == 6, 'Length of the licenceplate must be 6 (without any dashes).'
 

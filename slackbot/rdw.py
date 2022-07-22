@@ -57,7 +57,7 @@ class RdwOnlineClient:
     def __init__(self, app_token=None):
         self.client = Socrata('opendata.rdw.nl', app_token=app_token)
 
-    def get_rdw_details(self, plate):
+    async def get_rdw_details(self, plate):
         plate = plate.strip().replace('-', '').upper()
         assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes).'
 

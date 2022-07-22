@@ -24,7 +24,7 @@ class TestBot(TestCase):
     @mock.patch('slackbot.finnik.FinnikOnlineClient')
     @mock.patch('slackbot.rdw.RdwOnlineClient')
     @mock.patch('slackbot.owners.CarOwners')
-    def test_slack_command_car_lookup(self, mock_car_owners, mock_rdw_client, mock_finnik):
+    async def test_slack_command_car_lookup(self, mock_car_owners, mock_rdw_client, mock_finnik):
         mock_car_owners.lookup.return_value = None
         mock_rdw_client.get_rdw_details.return_value = None
         mock_finnik.get_car_details.return_value = None
@@ -35,16 +35,17 @@ class TestBot(TestCase):
         bot.finnik_client = mock_finnik
 
         r = bot.command_car('@user1', '12-AAA-4')
+
         mock_car_owners.lookup.assert_called_with('12AAA4')
         mock_rdw_client.get_rdw_details.assert_called_with('12AAA4')
         mock_finnik.get_car_details.assert_called_with('12AAA4')
         assert r == messages.lookup_no_details_found("12AAA4")
 
-        r = bot.command_car('@user1', 'tag 1234')
+        r = await bot.command_car('@user1', 'tag 1234')
         assert r == messages.command_invalid_licence_plate('1234')
 
         # Invalid..
-        r = bot.command_car('@user1', 'tag $$-^^^-4')
+        r = await bot.command_car('@user1', 'tag $$-^^^-4')
         assert r == messages.command_invalid_licence_plate('$$-^^^-4')
 
         # Happy Flow
