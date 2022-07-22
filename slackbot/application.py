@@ -122,4 +122,7 @@ def testing():
 
 if __name__ == '__main__':
     is_debug_mode = os.environ.get('DEBUG', 'False').lower() in ['true', 'yes']
+    # Python 3.6 shared event_loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     app.run(debug=is_debug_mode, host='0.0.0.0')
