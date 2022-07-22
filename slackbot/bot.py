@@ -277,8 +277,7 @@ class Bot:
                 self.post_chat_message(channel_ts_tuple, file_id, msg, log_descr="car found")
 
             if idx == -1:
-                self.post_chat_message(channel_ts_tuple, file_id, messages.comment_no_plate_found,
-                                       log_descr="No plates found")
+                log.info("Skip posting message: not found.")
 
     async def get_licence_plate_details(self, plate) -> Optional[dict]:
         """
