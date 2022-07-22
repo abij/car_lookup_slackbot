@@ -129,7 +129,7 @@ class Bot:
                 return messages.command_invalid_licence_plate(first_cmd)
 
             # Python 3.6
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_event_loop_policy().get_event_loop()
             details = loop.run_until_complete(self.get_licence_plate_details(plate))
 
             # Python 3.7+
@@ -255,7 +255,7 @@ class Bot:
                     continue
 
                 # Python 3.6
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_event_loop_policy().get_event_loop()
                 details = loop.run_until_complete(self.get_licence_plate_details(plate))
 
                 # Python 3.7+

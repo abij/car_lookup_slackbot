@@ -108,7 +108,7 @@ def testing():
         result = list(pyBot.licenceplateExtractor.find_licenceplates(file_path))
     elif 'kenteken' in params.keys():
         # Python 3.6
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop_policy().get_event_loop()
         result = loop.run_until_complete(pyBot.get_licence_plate_details(params.get('kenteken')))
 
         # Python 3.7+
