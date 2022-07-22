@@ -48,6 +48,16 @@ def is_file_not_found(res):
     return False
 
 
+def get_or_create_eventloop():
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError as ex:
+        if "There is no current event loop in thread" in str(ex):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return asyncio.get_event_loop()
+
+
 class Bot:
     """ Instantiates a Bot object to handle Slack events."""
 
@@ -129,7 +139,7 @@ class Bot:
                 return messages.command_invalid_licence_plate(first_cmd)
 
             # Python 3.6
-            loop = asyncio.get_event_loop_policy().get_event_loop()
+            loop = get_or_create_eventloop()
             details = loop.run_until_complete(self.get_licence_plate_details(plate))
 
             # Python 3.7+
@@ -255,7 +265,7 @@ class Bot:
                     continue
 
                 # Python 3.6
-                loop = asyncio.get_event_loop_policy().get_event_loop()
+                loop = get_or_create_eventloop()
                 details = loop.run_until_complete(self.get_licence_plate_details(plate))
 
                 # Python 3.7+
