@@ -288,9 +288,10 @@ class Bot:
         plate = licence_plate.normalize(plate)
 
         # Start lookups concurrently:
-        t1 = asyncio.create_task(self.car_owners.lookup(plate))
-        t2 = asyncio.create_task(self.rdw_client.get_rdw_details(plate))
-        t3 = asyncio.create_task(self.finnik_client.get_car_details(plate))
+        loop = get_or_create_eventloop()
+        t1 = loop.create_task(self.car_owners.lookup(plate))
+        t2 = loop.create_task(self.rdw_client.get_rdw_details(plate))
+        t3 = loop.create_task(self.finnik_client.get_car_details(plate))
 
         try:
             owner_lookup = await asyncio.wait_for(t1, timeout=1.0)

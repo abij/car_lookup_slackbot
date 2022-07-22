@@ -6,6 +6,7 @@ with open('requirements.txt') as f:
 setup(
     name='slackbot',
     version='1.1',
+    python_requires='=>3.6.*',  # OpenANPR is based on Ubuntu16 with Py3.6!
     description='Car Lookup - Slackbot',
     author='Alexander Bij',
     author_email='AlexanderBij@GoDataDriven.com',

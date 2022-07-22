@@ -1,6 +1,6 @@
 FROM openalpr/openalpr
 #FROM bija/openalpr
-# TODO: Update bija/openalpr with new Ubuntu AND correct OpenCV.
+# TODO: Update bija/openalpr with new Ubuntu AND correct OpenCV to suppoer Python 3.9+.
 
 RUN apt-get update && \
     rm /etc/localtime && \
