@@ -128,7 +128,12 @@ class Bot:
             if not licence_plate.is_valid(plate):
                 return messages.command_invalid_licence_plate(first_cmd)
 
-            details = asyncio.run(self.get_licence_plate_details(plate))
+            # Python 3.6
+            loop = asyncio.get_event_loop()
+            details = loop.run_until_complete(self.get_licence_plate_details(plate))
+
+            # Python 3.7+
+            # details = asyncio.run(self.get_licence_plate_details(plate))
             if not details:
                 return messages.lookup_no_details_found(plate)
             return messages.lookup_found_with_details(plate, details)
@@ -249,7 +254,12 @@ class Bot:
                     self.post_chat_message(channel_ts_tuple, file_id, msg, log_descr="Low confidence/Invalid pattern")
                     continue
 
-                details = asyncio.run(self.get_licence_plate_details(plate))
+                # Python 3.6
+                loop = asyncio.get_event_loop()
+                details = loop.run_until_complete(self.get_licence_plate_details(plate))
+
+                # Python 3.7+
+                # details = asyncio.run(self.get_licence_plate_details(plate))
                 if details:
                     msg = messages.comment_found_with_details(plate, confidence, details)
                 else:

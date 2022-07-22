@@ -107,9 +107,12 @@ def testing():
         file_path = os.path.join('/data', params.get('file'))
         result = list(pyBot.licenceplateExtractor.find_licenceplates(file_path))
     elif 'kenteken' in params.keys():
-        result = asyncio.run(
-            pyBot.get_licence_plate_details(params.get('kenteken'))
-        )
+        # Python 3.6
+        loop = asyncio.get_event_loop()
+        result = loop.run_until_complete(pyBot.get_licence_plate_details(params.get('kenteken')))
+
+        # Python 3.7+
+        # result = asyncio.run(pyBot.get_licence_plate_details(params.get('kenteken')))
     else:
         return make_response('Usage examples: </br>'
                              '<a href="/test?file=IMG_3423.JPG">/test?file=IMG_3423.JPG</a></br>'
