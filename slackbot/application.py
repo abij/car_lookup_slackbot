@@ -1,6 +1,5 @@
 import os
 from flask import Flask, request, make_response, render_template
-from flask_ipban import IpBan
 from slackeventsapi import SlackEventAdapter
 import asyncio
 
@@ -8,9 +7,7 @@ from slackbot import bot
 
 pyBot = bot.Bot()
 app = Flask(__name__)
-# https://github.com/Martlark/flask-ipban
-ip_ban = IpBan(ban_count=10)
-ip_ban.init_app(app)
+
 
 # For (local) testing, I want to be able to start the app anyway.
 if 'SLACK_SIGNING_SECRET' not in os.environ:
