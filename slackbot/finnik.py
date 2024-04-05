@@ -57,6 +57,7 @@ class FinnikOnlineClient:
         soup = BeautifulSoup(res.content, "html.parser")
 
         section_basic_info = soup.find('section', {"data-sectiontype": "BasicInformation"})
+        section_tech_data = soup.find('section', {"data-sectiontype": "TechnicalData"})
         section_quickcheck = soup.find('section', {"class": "quickcheck"})
         section_value_info = soup.find('section', {"data-sectiontype": "ValueInformation"})
 
@@ -97,6 +98,22 @@ class FinnikOnlineClient:
         if bpm_raw and "onbekend" not in bpm_raw[0].lower():
             bpm = int(re.sub(r"\D", '', bpm_raw[0]))
 
+        tech_info_rows = section_tech_data.find_all("div", {"class": "row"})
+        length = None
+        length_raw = [_get_value_text(r) for r in tech_info_rows if 'lengte' in _get_label_text(r).lower()]
+        if length_raw:
+            length = length_raw[0]
+
+        width = None
+        width_raw = [_get_value_text(r) for r in tech_info_rows if 'breedte' in _get_label_text(r).lower()]
+        if width_raw:
+            width = width_raw[0]
+
+        height = None
+        height_raw = [_get_value_text(r) for r in tech_info_rows if 'hoogte' in _get_label_text(r).lower()]
+        if height_raw:
+            height = height_raw[0]
+
         result = {
             'brand': brand,
             'model': model,
@@ -104,6 +121,11 @@ class FinnikOnlineClient:
             'price': price,
             'bpm': bpm,
             'acceleration': acceleration,
+            'size': {
+                "length": length,
+                "width": width,
+                "height": height,
+            }
         }
         log.info("Finnik lookup for %s result: %s", plate, result)
         return result
