@@ -9,7 +9,7 @@ setup(
     python_requires='>=3.6.*',  # OpenANPR is based on Ubuntu16 with Py3.6!
     description='Car Lookup - Slackbot',
     author='Alexander Bij',
-    author_email='AlexanderBij@GoDataDriven.com',
+    author_email='Alexander.Bij@xebia.com',
     packages=['slackbot'],
     install_requires=required,
     extras_require={
