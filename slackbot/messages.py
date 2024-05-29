@@ -70,9 +70,9 @@ def found_with_details(plate, details, prefix, confidence=None):
         message += " _({confidence:.1f}%)_".format(confidence=confidence)
 
     if owner:
-        message += "\n:person_raising_hand: {owner}".format(owner=owner)
+        message += "\n:raising_hand: {owner}".format(owner=owner)
     else:
-        message += "\n:person_shrugging: _(`/car tag` to add the owner)_"
+        message += "\n:shrug: _(`/car tag` to add the owner)_"
 
     if price:
         if isinstance(price, int):
