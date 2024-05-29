@@ -50,53 +50,52 @@ def lookup_no_details_found(plate):
     return '`/car {}` lookup: No details found...'.format(plate)
 
 
-def lookup_found_with_details(plate, details):
-    model = details.get('model') or '-'
-    car_brand = details.get('brand') or '-'
-    owner = _get_owner_from_details(details) or '- _(`/car tag` to add owner)_'
-    apk = details.get('apk') or '-'
-    price = details.get('price') or '-'
-    bpm = details.get('bpm') or '-'
-    acceleration = details.get('acceleration') or '-'
-
-    if isinstance(price, int):
-        price = '€ {:,d}'.format(price).replace(',', '.')
-        if isinstance(bpm, int):
-            price += " (€ {:,d} BPM)".format(bpm).replace(',', '.')
-
-    return '''`/car {plate}` lookup: <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>  
-     • Owner: {owner}
-     • Price: {price} 
-     • 0-100: {acceleration} sec
-     • APK expires: {apk}'''.format(plate=plate, model=model, car_brand=car_brand,
-                                    owner=owner, price=price, acceleration=acceleration, apk=apk)
-
-
 comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
                          "if _you_ can OCR a license plate from that image."
 
 
-def comment_found_with_details(plate, confidence, details):
+def found_with_details(plate, details, prefix, confidence=None):
     model = details.get('model') or '-'
     car_brand = details.get('brand') or '-'
-    owner = _get_owner_from_details(details) or '- _(`/car tag` to add owner)_'
-    apk = details.get('apk') or '-'
-    price = details.get('price') or '-'
-    acceleration = details.get('acceleration') or '-'
 
-    if isinstance(price, int):
-        price = '€ {:,d}'.format(price).replace(',', '.')
+    # Optional fields:
+    owner = _get_owner_from_details(details)
+    price = details.get('price')
+    acceleration = details.get('acceleration')
+    # apk = details.get('apk')
+    # bpm = details.get('bpm')
+    message = "{prefix}, it's a <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>!".format(prefix=prefix ,plate=plate, model=model, car_brand=car_brand)
 
-    return ''':mega: Found *{plate}*, it's a <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>  ! _(confidence {confidence:.2f})_
-     • Owner: {owner}
-     • Price: {price} 
-     • 0-100: {acceleration} sec
-     • APK expires: {apk}'''.format(plate=plate, confidence=confidence, model=model,
-                                    owner=owner, car_brand=car_brand, price=price, acceleration=acceleration, apk=apk)
+    if confidence:
+        message += " _({confidence:.1f}%)_".format(confidence=confidence)
+
+    if owner:
+        message += "\n:person_raising_hand: {owner}".format(owner=owner)
+    else:
+        message += "\n:person_shrugging: _(`/car tag` to add the owner)_"
+
+    if price:
+        if isinstance(price, int):
+            price = '€ {:,d}'.format(price).replace(',', '.')
+        message += "\n💶 {price}".format(price=price)
+
+    if acceleration:
+        if acceleration < 7:
+            message += "\n0-100: {acceleration} sec :rocket:".format(acceleration=acceleration)
+        elif acceleration < 10:
+            message += "\n0-100: {acceleration} sec :racing_car:".format(acceleration=acceleration)
+        elif acceleration < 12:
+            message += "\n0-100: {acceleration} sec :red_car:".format(acceleration=acceleration)
+        elif acceleration < 15:
+            message += "\n0-100: {acceleration} sec :blue_car:".format(acceleration=acceleration)
+        else:
+            message += "\n0-100: {acceleration} sec :motorized_wheelchair:".format(acceleration=acceleration)
+
+    return message
 
 
 def comment_found_no_details(plate, confidence):
-    return 'I found *{plate}* _(confidence {confidence:.2f})_, but no extra info associated with it...'.format(
+    return 'I found *{plate}* _(confidence {confidence:.1f})_, but no extra info associated with it...'.format(
         plate=plate, confidence=confidence)
 
 

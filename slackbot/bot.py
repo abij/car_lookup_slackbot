@@ -146,7 +146,7 @@ class Bot:
             # details = asyncio.run(self.get_licence_plate_details(plate))
             if not details:
                 return messages.lookup_no_details_found(plate)
-            return messages.lookup_found_with_details(plate, details)
+            return messages.found_with_details(plate, details, "`/car {plate}`".format(plate=plate))
 
         sub_command = first_cmd.lower().strip()
         if sub_command in ['tag', 'untag']:
@@ -271,7 +271,7 @@ class Bot:
                 # Python 3.7+
                 # details = asyncio.run(self.get_licence_plate_details(plate))
                 if details:
-                    msg = messages.comment_found_with_details(plate, confidence, details)
+                    msg = messages.found_with_details(plate, details, ":mega: Found *`{}`*".format(plate), confidence)
                 else:
                     msg = messages.comment_found_no_details(plate, confidence)
                 self.post_chat_message(channel_ts_tuple, file_id, msg, log_descr="car found")
