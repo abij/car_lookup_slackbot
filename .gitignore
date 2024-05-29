@@ -1,6 +1,8 @@
 .DS_Store
 __pycache__
 
+
+
 # Build related files
 .coverage
 coverage.xml
@@ -66,4 +68,5 @@ az-deploy-params*.json
 .idea/
 
 # Virtualenv
+.python-version
 venv/
