@@ -80,17 +80,21 @@ def found_with_details(plate, details, prefix, confidence=None):
         message += "\n💶 {price}".format(price=price)
 
     if acceleration:
-        if acceleration < 7:
-            message += "\n0-100: {acceleration} sec :rocket:".format(acceleration=acceleration)
-        elif acceleration < 10:
-            message += "\n0-100: {acceleration} sec :racing_car:".format(acceleration=acceleration)
-        elif acceleration < 12:
-            message += "\n0-100: {acceleration} sec :red_car:".format(acceleration=acceleration)
-        elif acceleration < 15:
-            message += "\n0-100: {acceleration} sec :blue_car:".format(acceleration=acceleration)
-        else:
-            message += "\n0-100: {acceleration} sec :motorized_wheelchair:".format(acceleration=acceleration)
+        try:
+            acceleration = float(acceleration)
 
+            if acceleration < 7:
+                message += "\n0-100: {acceleration} sec :rocket:".format(acceleration=acceleration)
+            elif acceleration < 9:
+                message += "\n0-100: {acceleration} sec :racing_car:".format(acceleration=acceleration)
+            elif acceleration < 10:
+                message += "\n0-100: {acceleration} sec :red_car:".format(acceleration=acceleration)
+            elif acceleration < 12:
+                message += "\n0-100: {acceleration} sec :blue_car:".format(acceleration=acceleration)
+            else:
+                message += "\n0-100: {acceleration} sec :motorized_wheelchair:".format(acceleration=acceleration)
+        except ValueError:
+            message += "\n0-100: {acceleration} sec".format(acceleration=acceleration)
     return message
 
 
