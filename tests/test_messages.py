@@ -34,6 +34,6 @@ class TestMessages(TestCase):
                                             confidence=99.87) ==
                 base_expected +
                 "\n:shrug: _(`/car tag` to add the owner)_" +
-                "\n0-100: 9.0 sec :red_car:")
+                "\n:blue_car: 0-100: 9.0 sec")
 
 
