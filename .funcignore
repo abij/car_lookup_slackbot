@@ -1,0 +1,37 @@
+# Git
+.git*
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+
+# Virtual environments
+.venv
+venv
+
+# Local dev / secrets
+local.settings.json
+.env
+.env.*
+
+# Tests — not needed at runtime
+tests/
+
+# Old ALPR code — removed feature
+alpr/
+slackbot/application.py
+slackbot/app_bolt.py
+slackbot/computervision.py
+
+# Docker — not used for Functions deploy
+Dockerfile*
+
+# Docs and tooling config
+*.md
+*.toml
+uv.lock
+
+# Large model file (leftover from ALPR)
+*.pt

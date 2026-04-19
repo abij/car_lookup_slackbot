@@ -1,0 +1,13 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "python",
+        "WEBSITE_RUN_FROM_PACKAGE": "1",
+        "SLACK_SIGNING_SECRET": "your-slack-signing-secret",
+        "RWD_APPTOKEN": "",
+        "AZURE_STORAGE_CONNECTION_STRING": "",
+        "AZURE_STORAGE_CONTAINER": "slackbot",
+        "AZURE_STORAGE_BLOB_NAME": "car-owners.csv"
+    }
+}

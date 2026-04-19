@@ -8,17 +8,17 @@ def _get_owner_from_details(details, default=None):
 
 
 command_car_usage = 'Lookup car details including the owner (if known):\n' \
-                    '`AA-12-BB`  _(dashes are optional)_\n' \
-                    '`tag AA-12-BB` _(register your car)_\n' \
-                    '`tag AA-12-BB @slackid` _(register someone else)_\n' \
-                    '`tag AA-12-BB "Jack Sparrow"` _(register someone on name)_\n' \
-                    '`untag AA-12-BB` _(remove this entry)_\n' \
+                    '`/car AA-12-BB`  _(dashes are optional)_\n' \
+                    '`/car tag AA-12-BB` _(register your car)_\n' \
+                    '`/car tag AA-12-BB @slackid` _(register someone else)_\n' \
+                    '`/car tag AA-12-BB "Jack Sparrow"` _(register someone on name)_\n' \
+                    '`/car untag AA-12-BB` _(remove this entry)_\n' \
 
 command_tag_usage = 'Register or unregister the owner of a car:\n' \
-                ' `tag AA-12-BB`  _(you are the owner)_\n' \
-                ' `tag AA-12-BB @thatguy`  _(or someone else with a slack handle)_\n' \
-                ' `tag AA-12-BB "The great pirate"`  _(or a quoted string defining the owner)_\n' \
-                ' `untag AA-12-BB`  _(removes this car)_'
+                ' `/car tag AA-12-BB`  _(you are the owner)_\n' \
+                ' `/car tag AA-12-BB @thatguy`  _(or someone else with a slack handle)_\n' \
+                ' `/car tag AA-12-BB "The great pirate"`  _(or a quoted string defining the owner)_\n' \
+                ' `/car untag AA-12-BB`  _(removes this car)_'
 
 
 def command_invalid_owner(owner, min_chars=3, max_chars=32):
@@ -39,7 +39,7 @@ def command_tag_added(plate, user_id=None, owner=None):
     if owner:
         return 'Added {} to "{}"'.format(plate, owner)
     else:
-        return 'Added {} to <{}>'.format(plate, user_id)
+        return 'Added {} to <@{}>'.format(plate, user_id)
 
 
 def command_untag(plate):
@@ -55,16 +55,25 @@ comment_no_plate_found = "No plates were found. Try `/car [license plate]` " \
 
 
 def found_with_details(plate, details, prefix, confidence=None):
-    model = details.get('model') or '-'
-    car_brand = details.get('brand') or '-'
+    model = details.get('model')
+    car_brand = details.get('brand')
+    slow = details.get('_slow_sources', [])
 
     # Optional fields:
     owner = _get_owner_from_details(details)
     price = details.get('price')
     acceleration = details.get('acceleration')
-    # apk = details.get('apk')
-    # bpm = details.get('bpm')
-    message = "{prefix}, it's a <https://autorapport.finnik.nl/kenteken/{plate}|*{car_brand} {model}*>!".format(prefix=prefix ,plate=plate, model=model, car_brand=car_brand)
+
+    # No car data — only owner info (external lookups timed out)
+    if not car_brand and not model:
+        slow_note = ' _({} unavailable)_'.format(', '.join(slow)) if slow else ''
+        if owner:
+            return '{prefix}: owner is {owner}{slow}'.format(prefix=prefix, owner=owner, slow=slow_note)
+        return '{prefix}: no details found{slow}'.format(prefix=prefix, slow=slow_note)
+
+    model = model or '-'
+    car_brand = car_brand or '-'
+    message = "{prefix}, it's a <https://finnik.nl/kenteken/{plate}|*{car_brand} {model}*>!".format(prefix=prefix, plate=plate.lower(), model=model, car_brand=car_brand)
 
     if confidence:
         message += " _({confidence:.1f}%)_".format(confidence=confidence)

@@ -1,7 +1,0 @@
-# Reduce files needed to build the image.
-.idea
-.pytests_cache
-alpr
-azure-deployment
-docs
-local

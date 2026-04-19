@@ -1,6 +1,7 @@
 """
 Lookup licence plate details on the www.finnik.nl.
 """
+import asyncio
 import logging
 import requests
 from bs4 import BeautifulSoup
@@ -36,16 +37,16 @@ class FinnikOnlineClient:
 
     async def get_car_details(self, plate):
         plate = licence_plate.normalize(plate)
-        assert len(plate) == 6, 'Length of the licenceplate must be 6 (without any dashes).'
+        if len(plate) != 6:
+            raise ValueError("Licence plate must be 6 characters (no dashes)")
 
         if self.last_failure and (dt.datetime.now() - self.last_failure).total_seconds() < self.service_failure_timeout:
             log.warning("Finnik last request failed less than %s sec ago (skip)", self.service_failure_timeout)
             return None
 
         try:
-            # Slack-commands are synchronous, max timeout 3sec
-            # Slack events are asynchronous, than we have enough time.
-            res = requests.get('https://autorapport.finnik.nl/kenteken/' + plate, timeout=(3, 3))
+            url = 'https://finnik.nl/kenteken/' + plate.lower() + '/gratis'
+            res = await asyncio.to_thread(requests.get, url, timeout=(2, 2.5), headers={'User-Agent': 'Mozilla/5.0'})
             res.raise_for_status()
         except Exception as e:
             self.enable_service_timeout()
@@ -66,36 +67,38 @@ class FinnikOnlineClient:
             self.enable_service_timeout()
             return None
 
-        brand = section_basic_info.find_all("div", {"class": "value"})[0].text
-        if brand:
-            brand = brand.strip()
-
-        model = section_basic_info.find_all("div", {"class": "value"})[1].text
-        if model:
-            model = model.strip()
+        value_divs = section_basic_info.find_all("div", {"class": "value"})
+        brand = value_divs[0].text.strip() if len(value_divs) > 0 else None
+        model = value_divs[1].text.strip() if len(value_divs) > 1 else None
 
         acceleration = None
-        div_speed = section_quickcheck.find_all("div", {"class": "speed"})[0]
-        if "0-100" in div_speed.text:
-            acceleration_text = div_speed.find("span").text
-            acceleration = acceleration_text.split()[0].replace(",",".")
+        speed_divs = section_quickcheck.find_all("div", {"class": "speed"})
+        div_speed = speed_divs[0] if speed_divs else None
+        if div_speed and "0-100" in div_speed.text:
+            span = div_speed.find("span")
+            if span:
+                acceleration = span.text.split()[0].replace(",", ".")
 
         apk = None
         div_apk = section_quickcheck.find_next("div", {"class": "garage"})
-        if "APK" in div_apk.text:
-            apk = div_apk.find("span").text.strip()
+        if div_apk and "APK" in div_apk.text:
+            span = div_apk.find("span")
+            if span:
+                apk = span.text.strip()
 
         rows = section_value_info.find_all("div", {"class": "row"})
 
         price = None
         price_raw = [_get_value_text(r) for r in rows if 'nieuwprijs' in _get_label_text(r).lower()]
         if price_raw:
-            price = int(re.sub(r"\D", '', price_raw[0]))
+            digits = re.sub(r"\D", '', price_raw[0])
+            price = int(digits) if digits else None
 
         bpm = None
         bpm_raw = [_get_value_text(r) for r in rows if 'bpm' in _get_label_text(r).lower()]
         if bpm_raw and "onbekend" not in bpm_raw[0].lower():
-            bpm = int(re.sub(r"\D", '', bpm_raw[0]))
+            digits = re.sub(r"\D", '', bpm_raw[0])
+            bpm = int(digits) if digits else None
 
         result = {
             'brand': brand,

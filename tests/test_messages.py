@@ -13,7 +13,7 @@ class TestMessages(TestCase):
         assert messages.lookup_no_details_found('12AAA4') == "`/car 12AAA4` lookup: No details found..."
 
     def test_found_with_details(self):
-        base_expected = "PREFIX, it's a <https://autorapport.finnik.nl/kenteken/12AAA4|*Tesla Model S*>! _(99.9%)_"
+        base_expected = "PREFIX, it's a <https://finnik.nl/kenteken/12aaa4|*Tesla Model S*>! _(99.9%)_"
 
         # Only required fields
         assert (messages.found_with_details("12AAA4",

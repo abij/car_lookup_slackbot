@@ -1,4 +1,4 @@
-from unittest import mock, TestCase
+from unittest import mock, IsolatedAsyncioTestCase
 
 from slackbot.finnik import FinnikOnlineClient
 
@@ -3078,7 +3078,7 @@ Groen
 </body></html>"""
 
 
-class TestFinnikOnlineClient(TestCase):
+class TestFinnikOnlineClient(IsolatedAsyncioTestCase):
 
     def _mock_response(
             self,
@@ -3112,7 +3112,7 @@ class TestFinnikOnlineClient(TestCase):
         cls.finnik_client = FinnikOnlineClient()
 
     async def test_invalid_too_long(self):
-        with self.assertRaises(AssertionError) as e:
+        with self.assertRaises(ValueError) as e:
             await self.finnik_client.get_car_details('tooLong')
             assert str(e.exception) == 'Length of the licence plate must be 6 (without any dashes).'
 

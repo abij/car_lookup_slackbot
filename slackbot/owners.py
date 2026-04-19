@@ -1,72 +1,116 @@
-import os
+import csv
+import io
 import logging
-import pandas as pd
+import os
 
 from slackbot import licence_plate
 
 log = logging.getLogger(__name__)
 
+_FIELDNAMES = ["kenteken", "slackid", "name"]
+
 
 class CarOwners:
-    # Source data:
-    # https://intranet.xebia.com/display/XNL/Xebia+Group+Kenteken+Registratie
-
-    def __init__(self, csv_path='/data/car-owners.csv'):
+    def __init__(self, csv_path: str = "/tmp/car-owners.csv") -> None:
         self.csv_path = csv_path
-        self.owners_df = None
+        self._blob_client = self._init_blob_client()
+        self._data: dict[str, dict] = {}
         self.load()
 
-    def tag(self, plate, slackid=None, name=None):
-        plate = licence_plate.normalize(plate)
-        assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes)'
-
-        if slackid and slackid.startswith('@'):
-            slackid = slackid[1:]
-
-        self.load()
-        if plate in self.owners_df.index:
-            self.owners_df.loc[plate, 'slackid'] = slackid or ''
-            self.owners_df.loc[plate, 'name'] = name or ''
-        else:
-            new_data = pd.DataFrame(data={
-                'slackid': [slackid],
-                'name': [name],
-                'kenteken': [plate]}
-            ).set_index('kenteken')
-            self.owners_df = pd.concat([self.owners_df, new_data])
-            self.owners_df = self.owners_df.where((pd.notnull(self.owners_df)), None)
-        self.save()
-
-    def untag(self, slackid, plate):
-        self.load()
-        if plate in self.owners_df.index:
-            self.owners_df.drop([plate], inplace=True)
-            self.save()
-
-    async def lookup(self, plate):
-        """
-        :return: Dict with 'name' and 'slackid' or None is not found
-        """
-        plate = licence_plate.normalize(plate)
-        assert len(plate) == 6, 'Length of the licence plate must be 6 (without any dashes)'
-
-        self.load()
-        if plate not in self.owners_df.index:
-            log.info('Owner lookup for %s result: not found.', plate)
+    @staticmethod
+    def _init_blob_client():
+        conn_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+        if not conn_str:
+            return None
+        try:
+            from azure.storage.blob import BlobServiceClient  # noqa: PLC0415
+            container = os.environ.get("AZURE_STORAGE_CONTAINER", "slackbot")
+            blob_name = os.environ.get("AZURE_STORAGE_BLOB_NAME", "car-owners.csv")
+            blob = (
+                BlobServiceClient.from_connection_string(conn_str)
+                .get_container_client(container)
+                .get_blob_client(blob_name)
+            )
+            log.info("Car owners backed by Azure Blob Storage (%s/%s)", container, blob_name)
+            return blob
+        except Exception as exc:
+            log.warning("Azure Blob Storage init failed, falling back to local file: %s", exc)
             return None
 
-        res = self.owners_df.loc[plate]
-        log.info('Owner lookup for %s result: found: %s', plate, res.to_dict())
-        return res.to_dict()
+    @staticmethod
+    def _parse(text: str) -> dict:
+        result = {}
+        for row in csv.DictReader(io.StringIO(text)):
+            plate = (row.get("kenteken") or "").strip()
+            if plate:
+                result[plate] = {
+                    "slackid": row.get("slackid") or None,
+                    "name": row.get("name") or None,
+                }
+        return result
 
-    def load(self):
-        if not os.path.exists(self.csv_path):
-            empty_df = pd.DataFrame(columns=['kenteken', 'slackid', 'name'], dtype=str)
-            empty_df.set_index('kenteken', inplace=True)
-            self.owners_df = empty_df
+    def _serialize(self) -> str:
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=_FIELDNAMES, quoting=csv.QUOTE_ALL)
+        writer.writeheader()
+        for plate, info in self._data.items():
+            writer.writerow({
+                "kenteken": plate,
+                "slackid": info.get("slackid") or "",
+                "name": info.get("name") or "",
+            })
+        return buf.getvalue()
+
+    def load(self) -> None:
+        if self._blob_client:
+            try:
+                text = self._blob_client.download_blob().readall().decode("utf-8")
+                self._data = self._parse(text)
+                return
+            except Exception as exc:
+                log.warning("Blob load failed, starting empty: %s", exc)
+                self._data = {}
+                return
+
+        if os.path.exists(self.csv_path):
+            with open(self.csv_path, newline="", encoding="utf-8") as f:
+                self._data = self._parse(f.read())
         else:
-            self.owners_df = pd.read_csv(self.csv_path, header=0, index_col='kenteken', quoting=1, dtype=str)
-            self.owners_df = self.owners_df.where((pd.notnull(self.owners_df)), None)
+            self._data = {}
 
-    def save(self):
-        self.owners_df.to_csv(self.csv_path, header=True, quoting=1, index_label=["kenteken"])
+    def save(self) -> None:
+        text = self._serialize()
+        if self._blob_client:
+            try:
+                self._blob_client.upload_blob(text, overwrite=True)
+                return
+            except Exception as exc:
+                log.warning("Blob save failed: %s", exc)
+
+        with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
+            f.write(text)
+
+    def tag(self, plate: str, slackid: str | None = None, name: str | None = None) -> None:
+        plate = licence_plate.normalize(plate)
+        if len(plate) != 6:
+            raise ValueError("Licence plate must be 6 characters (no dashes)")
+        if slackid and slackid.startswith("@"):
+            slackid = slackid[1:]
+        self.load()
+        self._data[plate] = {"slackid": slackid, "name": name}
+        self.save()
+
+    def untag(self, slackid: str, plate: str) -> None:
+        plate = licence_plate.normalize(plate)
+        self.load()
+        self._data.pop(plate, None)
+        self.save()
+
+    async def lookup(self, plate: str) -> dict | None:
+        plate = licence_plate.normalize(plate)
+        if len(plate) != 6:
+            raise ValueError("Licence plate must be 6 characters (no dashes)")
+        self.load()
+        result = self._data.get(plate)
+        log.info("Owner lookup for %s: %s", plate, result)
+        return result

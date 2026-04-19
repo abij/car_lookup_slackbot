@@ -70,3 +70,7 @@ az-deploy-params*.json
 # Virtualenv
 .python-version
 venv/
+.venv/
+
+# Azure Functions local settings (contains secrets)
+local.settings.json
